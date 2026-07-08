@@ -1,0 +1,24 @@
+{
+  "name": "llmstudy",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Local-first certification study OS — starting with NVIDIA NCA-GENL",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev -w apps/server\" \"npm run dev -w apps/web\"",
+    "build": "npm run build -w apps/web",
+    "seed": "npm run seed -w apps/server",
+    "db:reset": "npm run db:reset -w apps/server",
+    "test": "npm run test -w apps/server"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  },
+  "engines": {
+    "node": ">=18.18"
+  }
+}

@@ -1,0 +1,2 @@
+# The runtime SQLite database (study.db) is created here on first boot.
+# This file keeps the folder in git; the .db files themselves are gitignored.

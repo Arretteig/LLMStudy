@@ -1,0 +1,137 @@
+{
+  "_note": "EDITABLE PLACEHOLDER CONTENT. The five domains and their exam weights are from NVIDIA's official NCA-GENL blueprint (https://www.nvidia.com/en-us/learn/certification/generative-ai-llm-associate/). The individual objective wordings below are representative study targets mapped onto that blueprint, NOT verbatim official sub-objectives. Edit, add, split, or delete these freely — this file is just a starting point. Seeding uses INSERT OR IGNORE keyed on (cert_path, title), so re-running the seed will not duplicate rows.",
+  "_domain_weights": {
+    "Core Machine Learning and AI Knowledge": "30%",
+    "Software Development": "24%",
+    "Experimentation": "22%",
+    "Data Analysis and Visualization": "14%",
+    "Trustworthy AI": "10%"
+  },
+  "objectives": [
+    {
+      "title": "Transformer architecture fundamentals",
+      "domain": "Core Machine Learning and AI Knowledge",
+      "description": "Explain self-attention, multi-head attention, positional encoding, and layer normalization, and how they combine into a transformer block."
+    },
+    {
+      "title": "Neural network training basics",
+      "domain": "Core Machine Learning and AI Knowledge",
+      "description": "Describe layers, activation functions, loss functions, gradient descent, and backpropagation — how a network actually learns."
+    },
+    {
+      "title": "Model architecture families",
+      "domain": "Core Machine Learning and AI Knowledge",
+      "description": "Distinguish encoder-only, decoder-only, and encoder-decoder models and pick the right family for a task."
+    },
+    {
+      "title": "Pre-training, inference, and scaling laws",
+      "domain": "Core Machine Learning and AI Knowledge",
+      "description": "Understand how LLMs are pre-trained, how inference works, and what scaling laws and foundation-model concepts imply."
+    },
+    {
+      "title": "Prompt engineering and alignment concepts",
+      "domain": "Core Machine Learning and AI Knowledge",
+      "description": "Apply zero-shot, few-shot, chain-of-thought, and system prompts; explain alignment methods like RLHF and instruction tuning."
+    },
+    {
+      "title": "Build LLM apps with Python libraries",
+      "domain": "Software Development",
+      "description": "Use Python with Hugging Face Transformers and LangChain to build LLM-powered applications."
+    },
+    {
+      "title": "NVIDIA generative-AI ecosystem",
+      "domain": "Software Development",
+      "description": "Apply NeMo, NIM microservices, and Triton Inference Server in an LLM workflow."
+    },
+    {
+      "title": "LLM integration and agentic workflows",
+      "domain": "Software Development",
+      "description": "Integrate and deploy LLMs into applications, including orchestration and agentic patterns (e.g., LangChain/LangGraph)."
+    },
+    {
+      "title": "Software engineering best practices for LLM systems",
+      "domain": "Software Development",
+      "description": "Apply modular code, version control, and clean API design to production LLM systems."
+    },
+    {
+      "title": "Inference optimization and serving",
+      "domain": "Software Development",
+      "description": "Understand quantization, batching, and other serving concepts that make LLM deployment efficient."
+    },
+    {
+      "title": "Fine-tuning and parameter-efficient adaptation",
+      "domain": "Experimentation",
+      "description": "Apply full fine-tuning and PEFT methods including LoRA and QLoRA, and know when each is appropriate."
+    },
+    {
+      "title": "Evaluation metrics for LLMs",
+      "domain": "Experimentation",
+      "description": "Select and interpret perplexity, BLEU, ROUGE, and BERTScore for the right kind of task."
+    },
+    {
+      "title": "Experiment design and model comparison",
+      "domain": "Experimentation",
+      "description": "Design experiments and use A/B testing and benchmarking to compare models fairly."
+    },
+    {
+      "title": "LLM-as-a-judge and automated evaluation",
+      "domain": "Experimentation",
+      "description": "Use LLM-as-a-judge and automated evaluation harnesses to assess model quality at scale."
+    },
+    {
+      "title": "Reproducibility and validation",
+      "domain": "Experimentation",
+      "description": "Validate model behavior and reproducibility across experimental trials."
+    },
+    {
+      "title": "Text data cleaning and feature engineering",
+      "domain": "Data Analysis and Visualization",
+      "description": "Perform data cleaning, preprocessing pipelines, and feature engineering for text data."
+    },
+    {
+      "title": "Tokenization and embeddings",
+      "domain": "Data Analysis and Visualization",
+      "description": "Apply BPE, WordPiece, and SentencePiece tokenization and generate text embeddings / vector representations."
+    },
+    {
+      "title": "Interpreting statistical metrics",
+      "domain": "Data Analysis and Visualization",
+      "description": "Interpret metrics such as loss and explained-variance ratio to guide model-development decisions."
+    },
+    {
+      "title": "Data visualization for insight",
+      "domain": "Data Analysis and Visualization",
+      "description": "Create and read visualizations that communicate dataset insights clearly."
+    },
+    {
+      "title": "GPU-accelerated data processing",
+      "domain": "Data Analysis and Visualization",
+      "description": "Use GPU-accelerated tooling (e.g., RAPIDS / cuDF) for large-scale data processing where appropriate."
+    },
+    {
+      "title": "Bias detection and mitigation",
+      "domain": "Trustworthy AI",
+      "description": "Detect and minimize bias using fairness metrics and mitigation strategies."
+    },
+    {
+      "title": "Content filtering and hallucination mitigation",
+      "domain": "Trustworthy AI",
+      "description": "Apply content filtering and techniques that prevent or reduce hallucinated output."
+    },
+    {
+      "title": "Privacy, security, and consent",
+      "domain": "Trustworthy AI",
+      "description": "Balance data privacy, security, and user consent in LLM applications."
+    },
+    {
+      "title": "Responsible and ethical AI practices",
+      "domain": "Trustworthy AI",
+      "description": "Follow responsible/ethical AI principles and governance practices."
+    },
+    {
+      "title": "Safety and alignment risks in deployment",
+      "domain": "Trustworthy AI",
+      "description": "Recognize safety and alignment risks in deployed generative-AI systems."
+    }
+  ]
+}
