@@ -1,5 +1,6 @@
 import express from 'express';
 import { getDb } from './db';
+import { labsRouter } from './routes/labs';
 import { objectivesRouter } from './routes/objectives';
 import { questionsRouter } from './routes/questions';
 import { reviewsRouter } from './routes/reviews';
@@ -18,7 +19,8 @@ const { n } = db.prepare('SELECT COUNT(*) AS n FROM objectives').get() as {
 if (n === 0) {
   const result = seed(db);
   console.log(
-    `[seed] new database — seeded ${result.objectives} objectives and ${result.questions} questions`,
+    `[seed] new database — seeded ${result.objectives} objectives, ` +
+      `${result.questions} questions, ${result.labs} labs`,
   );
 }
 
@@ -29,6 +31,7 @@ app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/objectives', objectivesRouter);
 app.use('/api/questions', questionsRouter);
 app.use('/api/reviews', reviewsRouter);
+app.use('/api/labs', labsRouter);
 
 app.listen(PORT, () => {
   console.log(`LLMStudy API listening on http://localhost:${PORT}`);

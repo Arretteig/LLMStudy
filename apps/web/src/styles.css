@@ -442,6 +442,90 @@ code {
   font-size: 2.5rem;
 }
 
+/* ---- Labs ---- */
+.lab-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.lab-form {
+  margin-top: 1rem;
+}
+.lab-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.lab-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.lab-title {
+  font-size: 1.1rem;
+}
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.tag-chip {
+  font-size: 0.75rem;
+  background: #eef2f7;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.1rem 0.55rem;
+  color: #475569;
+}
+.lab-fields {
+  margin: 0;
+  display: grid;
+  gap: 0.6rem;
+}
+.lab-field {
+  margin: 0;
+}
+.lab-field dt {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--muted);
+  margin-bottom: 0.15rem;
+}
+.lab-field dd {
+  margin: 0;
+  font-size: 0.93rem;
+  white-space: pre-wrap;
+}
+.lab-commands {
+  margin: 0;
+  background: #1e293b;
+  color: #e2e8f0;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+.lab-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border-top: 1px dashed var(--line);
+  padding-top: 0.6rem;
+}
+textarea.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.88rem;
+}
+.grow {
+  flex: 1;
+  min-width: 200px;
+}
+
 /* ---- Banner ---- */
 .banner {
   padding: 0.6rem 0.85rem;

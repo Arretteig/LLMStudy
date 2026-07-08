@@ -83,6 +83,43 @@ CREATE TABLE IF NOT EXISTS answer_attempts (
 CREATE INDEX IF NOT EXISTS idx_attempts_question ON answer_attempts(question_id, attempted_date);
 
 -- =========================================================================
--- Later milestones will add: labs + tags + lab_tags (M4).
--- Kept out of the current slice on purpose.
+-- M4: Lab notebook
+-- =========================================================================
+-- One row per hands-on experiment, following hypothesis -> change -> observe ->
+-- explain -> next. Optionally tied to an objective; tagged via the junction.
+CREATE TABLE IF NOT EXISTS labs (
+  id              INTEGER PRIMARY KEY,
+  title           TEXT NOT NULL,
+  objective_id    INTEGER REFERENCES objectives(id) ON DELETE SET NULL,
+  hypothesis      TEXT,
+  what_changed    TEXT,
+  commands_config TEXT,   -- stored verbatim as text, not parsed
+  observed_result TEXT,
+  why_it_happened TEXT,
+  what_next       TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_labs_objective ON labs(objective_id);
+
+-- Canonical tag dictionary. COLLATE NOCASE dedupes case-insensitively while
+-- preserving first-seen display casing (so "LoRA" and "lora" are one tag).
+CREATE TABLE IF NOT EXISTS tags (
+  id         INTEGER PRIMARY KEY,
+  name       TEXT NOT NULL COLLATE NOCASE UNIQUE,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Many-to-many labs <-> tags. Composite PK doubles as the covering index.
+CREATE TABLE IF NOT EXISTS lab_tags (
+  lab_id INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE,
+  tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  PRIMARY KEY (lab_id, tag_id)
+);
+
+-- =========================================================================
+-- Extensibility hooks designed but NOT built (see README roadmap):
+-- documents/chunks/citations (RAG), attempt_gradings (LLM grading),
+-- exam_sessions/exam_items (mock exams), benchmark_runs (vLLM logger).
 -- =========================================================================

@@ -133,3 +133,58 @@ export const REVIEW_RATINGS: ReviewRatingOption[] = [
   { value: 4, label: 'Good', hint: 'in 7 days', days: 7 },
   { value: 5, label: 'Easy', hint: 'in 14 days', days: 14 },
 ];
+
+// ---------------------------------------------------------------------------
+// Lab notebook (M4)
+// ---------------------------------------------------------------------------
+
+/** A hands-on experiment entry. */
+export interface Lab {
+  id: number;
+  title: string;
+  objective_id: number | null;
+  hypothesis: string | null;
+  what_changed: string | null;
+  commands_config: string | null;
+  observed_result: string | null;
+  why_it_happened: string | null;
+  what_next: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A lab joined with its objective title and tag names. */
+export interface LabWithDetails extends Lab {
+  objective_title: string | null;
+  tags: string[];
+}
+
+type LabBodyFields = Omit<Lab, 'id' | 'title' | 'created_at' | 'updated_at'>;
+
+/** Fields a client may set when creating a lab (title required, tags optional). */
+export type NewLab = { title: string } & Partial<LabBodyFields> & {
+  tags?: string[];
+};
+
+/** Fields a client may change on an existing lab. */
+export type LabUpdate = Partial<Omit<Lab, 'id' | 'created_at' | 'updated_at'>> & {
+  tags?: string[];
+};
+
+/** The structured prompts that make a lab a real experiment, in order. */
+export const LAB_SECTIONS: { key: keyof Lab; label: string; hint: string }[] = [
+  { key: 'hypothesis', label: 'Hypothesis', hint: 'What did you expect to happen?' },
+  { key: 'what_changed', label: 'What I changed', hint: 'The variable / knob you altered.' },
+  {
+    key: 'commands_config',
+    label: 'Commands / config',
+    hint: 'Exact commands or config used.',
+  },
+  { key: 'observed_result', label: 'Observed result', hint: 'What actually happened.' },
+  {
+    key: 'why_it_happened',
+    label: 'Why I think it happened',
+    hint: 'Your explanation / mechanism.',
+  },
+  { key: 'what_next', label: 'What I would try next', hint: 'The follow-up experiment.' },
+];

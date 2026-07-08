@@ -1,6 +1,9 @@
 import type {
   AnswerAttempt,
   DueItem,
+  LabUpdate,
+  LabWithDetails,
+  NewLab,
   NewObjective,
   NewQuestion,
   Objective,
@@ -90,4 +93,32 @@ export function submitReview(input: ReviewSubmission): Promise<AnswerAttempt> {
 
 export function getHistory(questionId: number): Promise<AnswerAttempt[]> {
   return http<AnswerAttempt[]>(`/api/reviews/history/${questionId}`);
+}
+
+// ---- Labs -----------------------------------------------------------------
+
+export function listLabs(): Promise<LabWithDetails[]> {
+  return http<LabWithDetails[]>('/api/labs');
+}
+
+export function createLab(input: NewLab): Promise<LabWithDetails> {
+  return http<LabWithDetails>('/api/labs', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateLab(id: number, input: LabUpdate): Promise<LabWithDetails> {
+  return http<LabWithDetails>(`/api/labs/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}
+
+export async function deleteLab(id: number): Promise<void> {
+  const res = await fetch(`/api/labs/${id}`, { method: 'DELETE' });
+  if (!res.ok && res.status !== 204) {
+    const body = (await res.json().catch(() => ({}))) as { error?: string };
+    throw new Error(body.error ?? `${res.status} ${res.statusText}`);
+  }
 }

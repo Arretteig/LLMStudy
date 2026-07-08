@@ -1,11 +1,12 @@
 import { NavLink, Route, Routes } from 'react-router-dom';
+import { LabsPage } from './pages/Labs';
 import { ObjectivesPage } from './pages/Objectives';
 import { QuestionsPage } from './pages/Questions';
 import { ReviewPage } from './pages/Review';
 
 // Modules coming in later milestones. Shown greyed-out so the shell is visible
 // but it's obvious what isn't built yet.
-const COMING_SOON = ['Labs', 'Dashboard'];
+const COMING_SOON = ['Dashboard'];
 
 export function App() {
   return (
@@ -24,6 +25,9 @@ export function App() {
           <NavLink to="/review" className="nav-link">
             Review
           </NavLink>
+          <NavLink to="/labs" className="nav-link">
+            Labs
+          </NavLink>
           {COMING_SOON.map((label) => (
             <span key={label} className="nav-link nav-soon" title="Coming in a later milestone">
               {label}
@@ -37,6 +41,7 @@ export function App() {
           <Route path="/" element={<ObjectivesPage />} />
           <Route path="/questions" element={<QuestionsPage />} />
           <Route path="/review" element={<ReviewPage />} />
+          <Route path="/labs" element={<LabsPage />} />
         </Routes>
       </main>
     </div>

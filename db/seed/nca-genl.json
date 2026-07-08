@@ -219,5 +219,29 @@
       "expected_answer": "Bias commonly enters via skewed training data or annotation. Mitigations include data curation/balancing, fairness evaluation across groups, debiasing fine-tuning, and output filtering.",
       "difficulty": 2
     }
+  ],
+  "labs": [
+    {
+      "title": "Effect of temperature on answer determinism",
+      "objective_title": "Prompt engineering and alignment concepts",
+      "hypothesis": "Lowering temperature from 0.7 to 0.0 will make repeated answers to the same factual prompt nearly identical.",
+      "what_changed": "Sampling temperature only (0.7 -> 0.2 -> 0.0), same prompt and model, 5 generations each.",
+      "commands_config": "model=llama-3.1-8b-instruct\nprompt=\"List the three main components of a transformer block.\"\ntemperature in {0.7, 0.2, 0.0}; top_p=1.0; n=5",
+      "observed_result": "At 0.7 wording varied and one run added an extra (wrong) component. At 0.0 all 5 runs were token-identical and correct.",
+      "why_it_happened": "Greedy decoding at temperature 0 always picks the argmax token, removing sampling variance; higher temperature flattens the distribution so lower-probability (sometimes wrong) tokens get chosen.",
+      "what_next": "Test whether temperature 0 hurts on a task that benefits from diversity (brainstorming), to feel the trade-off.",
+      "tags": ["prompting", "sampling", "reproducibility"]
+    },
+    {
+      "title": "LoRA vs full fine-tune: trainable params and VRAM",
+      "objective_title": "Fine-tuning and parameter-efficient adaptation",
+      "hypothesis": "A LoRA adapter (r=8) will train a tiny fraction of parameters and fit in far less VRAM than a full fine-tune of the same model.",
+      "what_changed": "Adaptation method: full fine-tune vs LoRA (r=8, alpha=16) on the same small instruction dataset.",
+      "commands_config": "base=llama-3.1-8b\nlora: r=8, alpha=16, target_modules=[q_proj,v_proj]\nbatch_size=4, epochs=1",
+      "observed_result": "LoRA reported ~4-5M trainable params vs ~8B for full FT, and fit on a single 16GB GPU where full FT OOM'd.",
+      "why_it_happened": "LoRA freezes base weights and only learns low-rank update matrices injected into attention projections, so optimizer state (the big VRAM cost) is proportional to the tiny adapter, not the whole model.",
+      "what_next": "Add QLoRA (4-bit base) and compare VRAM and final eval loss against the r=8 LoRA run.",
+      "tags": ["fine-tuning", "lora", "vram"]
+    }
   ]
 }
