@@ -7,10 +7,15 @@ Not a flashcard app. The goal is a practical learning/lab system that makes you
 *explain* concepts, *run* small experiments, *document* observations, and
 *revisit* weak areas.
 
-> **Status: Milestone 1 (Objective Tracker).** The certification blueprint tracker
-> is fully working end-to-end. Recall questions, spaced review, the lab notebook,
-> and the dashboard are scaffolded in the nav as "coming soon" and land in the next
-> milestones.
+> **Status: Milestone 3 (Spaced Review).** The blueprint tracker, the active-recall
+> question bank, and the spaced-review queue are working end-to-end. The lab
+> notebook and the dashboard are scaffolded in the nav as "coming soon" and land in
+> the next milestones.
+>
+> **Upgrading from an earlier milestone?** The schema grew (questions in M2, the
+> `answer_attempts` table in M3). New tables are created automatically on boot; run
+> `npm run seed` once to load new starter content (non-destructive), or
+> `npm run db:reset` for a clean slate.
 
 ---
 
@@ -123,9 +128,9 @@ to CSV/pandas.
 
 ## Roadmap
 
-- **M1 — Objective tracker** ✅ (this milestone)
-- **M2 — Recall questions** linked to objectives
-- **M3 — Answer + self-score + spaced-review queue** (`1→+1d, 2→+2d, 3→+4d, 4→+7d, 5→+14d`)
+- **M1 — Objective tracker** ✅
+- **M2 — Recall questions** linked to objectives ✅
+- **M3 — Answer + self-score + spaced-review queue** ✅ (this milestone) (`1→+1d, 2→+2d, 3→+4d, 4→+7d, 5→+14d`)
 - **M4 — Lab notebook** (hypothesis → change → observe → explain → next)
 - **M5 — Weak-areas / progress dashboard**
 - **M6 — Full seed content, scripts, tests, README polish**

@@ -133,5 +133,91 @@
       "domain": "Trustworthy AI",
       "description": "Recognize safety and alignment risks in deployed generative-AI systems."
     }
+  ],
+  "questions": [
+    {
+      "objective_title": "Transformer architecture fundamentals",
+      "question_text": "In one or two sentences, explain what self-attention computes and why it lets a transformer model long-range dependencies.",
+      "expected_answer": "Self-attention computes a weighted sum of all token representations, where the weights come from query-key similarity. Because every token can attend directly to every other token, long-range dependencies are a single hop away — no recurrence needed.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Transformer architecture fundamentals",
+      "question_text": "Why do transformers need positional encoding?",
+      "expected_answer": "Self-attention is permutation-invariant and has no built-in notion of order, so positional information must be injected (via sinusoidal or learned positional encodings) for the model to use token order.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Model architecture families",
+      "question_text": "When would you choose an encoder-only model (e.g., BERT) over a decoder-only model (e.g., GPT)?",
+      "expected_answer": "Encoder-only for understanding/representation tasks needing bidirectional context (classification, embeddings, NER). Decoder-only for autoregressive generation.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Prompt engineering and alignment concepts",
+      "question_text": "What is chain-of-thought prompting and when does it help?",
+      "expected_answer": "Prompting the model to produce intermediate reasoning steps before its final answer. It helps on multi-step reasoning, arithmetic, and logic tasks, primarily in larger models.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Prompt engineering and alignment concepts",
+      "question_text": "Explain the difference between instruction tuning and RLHF.",
+      "expected_answer": "Instruction tuning is supervised fine-tuning on (instruction, response) pairs so the model follows instructions. RLHF further optimizes the model against a reward model trained on human preference comparisons (typically via PPO) to align outputs with human preferences.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Fine-tuning and parameter-efficient adaptation",
+      "question_text": "What problem does LoRA solve, and how?",
+      "expected_answer": "Full fine-tuning updates all weights (expensive, large checkpoints). LoRA freezes the base weights and learns small low-rank update matrices injected into layers, drastically cutting trainable parameters and memory while keeping quality.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Fine-tuning and parameter-efficient adaptation",
+      "question_text": "What does the 'Q' in QLoRA add over plain LoRA?",
+      "expected_answer": "QLoRA quantizes the frozen base model (e.g., 4-bit NF4) to cut memory further, while training LoRA adapters in higher precision on top — enabling fine-tuning of large models on a single GPU.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Evaluation metrics for LLMs",
+      "question_text": "What does perplexity measure, and does lower or higher indicate a better language model?",
+      "expected_answer": "Perplexity is the exponentiated average negative log-likelihood the model assigns to held-out text. Lower is better — the model is less 'surprised' by the data.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Evaluation metrics for LLMs",
+      "question_text": "Contrast BLEU and ROUGE — what task is each typically used for?",
+      "expected_answer": "BLEU is precision-oriented n-gram overlap, common for machine translation. ROUGE is recall-oriented n-gram / longest-common-subsequence overlap, common for summarization.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Tokenization and embeddings",
+      "question_text": "What problem does subword tokenization (BPE/WordPiece) solve compared to word-level tokenization?",
+      "expected_answer": "It handles rare and unseen words and bounds vocabulary size by splitting words into frequent subword units, avoiding huge vocabularies and out-of-vocabulary tokens.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Inference optimization and serving",
+      "question_text": "How does quantization reduce inference cost, and what is the trade-off?",
+      "expected_answer": "It represents weights/activations in lower precision (e.g., INT8 or 4-bit), cutting memory and bandwidth and speeding inference. The trade-off is potential accuracy loss if quantization is too aggressive.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "LLM integration and agentic workflows",
+      "question_text": "What distinguishes an 'agentic' LLM workflow from a single prompt-response call?",
+      "expected_answer": "An agent loops: it can plan, call tools/APIs, observe the results, and iterate over multiple steps toward a goal — rather than producing one output from one prompt.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Content filtering and hallucination mitigation",
+      "question_text": "Name two techniques to reduce hallucinations in an LLM application.",
+      "expected_answer": "Any two of: retrieval-augmented generation grounded in cited sources; output validation / constrained decoding; lowering temperature; instructing the model to abstain when unsure; post-hoc fact-checking.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Bias detection and mitigation",
+      "question_text": "Give one way bias can enter an LLM and one mitigation.",
+      "expected_answer": "Bias commonly enters via skewed training data or annotation. Mitigations include data curation/balancing, fairness evaluation across groups, debiasing fine-tuning, and output filtering.",
+      "difficulty": 2
+    }
   ]
 }

@@ -12,5 +12,7 @@ for (const suffix of ['', '-wal', '-shm']) {
 }
 
 const db = openDb();
-const total = seed(db);
-console.log(`Database reset. Objectives in database: ${total}`);
+const result = seed(db);
+console.log(
+  `Database reset. Objectives: ${result.objectives}, questions: ${result.questions}.`,
+);

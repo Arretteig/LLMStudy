@@ -1,5 +1,7 @@
-// CLI entry: `npm run seed`. Loads starter objectives (idempotent).
+// CLI entry: `npm run seed`. Loads starter objectives + questions (idempotent).
 import { seed } from '../seed';
 
-const total = seed();
-console.log(`Seed complete. Objectives in database: ${total}`);
+const result = seed();
+console.log(
+  `Seed complete. Objectives: ${result.objectives}, questions: ${result.questions}.`,
+);

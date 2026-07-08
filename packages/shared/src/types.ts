@@ -49,3 +49,87 @@ export type NewObjective = { title: string } & Partial<
 export type ObjectiveUpdate = Partial<
   Omit<Objective, 'id' | 'created_at' | 'updated_at'>
 >;
+
+// ---------------------------------------------------------------------------
+// Recall questions (M2)
+// ---------------------------------------------------------------------------
+
+/** An active-recall question, optionally linked to an objective. */
+export interface RecallQuestion {
+  id: number;
+  objective_id: number | null;
+  question_text: string;
+  expected_answer: string | null;
+  /** 1 (easy) .. 5 (hard). Null until set. */
+  difficulty: number | null;
+  // Denormalized SRS cache — populated by the spaced-review engine in M3.
+  last_attempted_date: string | null;
+  next_review_date: string | null;
+  self_score: number | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** A question joined with its objective's title (list responses). */
+export interface RecallQuestionWithObjective extends RecallQuestion {
+  objective_title: string | null;
+}
+
+/** Fields a client may set when creating a question (question_text required). */
+export type NewQuestion = { question_text: string } & Partial<
+  Pick<RecallQuestion, 'objective_id' | 'expected_answer' | 'difficulty'>
+>;
+
+/** Fields a client may change on an existing question. */
+export type QuestionUpdate = Partial<
+  Pick<
+    RecallQuestion,
+    'objective_id' | 'question_text' | 'expected_answer' | 'difficulty'
+  >
+>;
+
+// ---------------------------------------------------------------------------
+// Spaced review (M3)
+// ---------------------------------------------------------------------------
+
+/** One immutable record of attempting a question. */
+export interface AnswerAttempt {
+  id: number;
+  question_id: number;
+  user_answer: string | null;
+  self_score: number | null;
+  /** 1-5 self-rating that drove the next interval. */
+  rating: number;
+  attempted_date: string;
+  next_review_date: string | null;
+  created_at: string;
+}
+
+/** A question surfaced in the due queue. */
+export interface DueItem extends RecallQuestionWithObjective {
+  /** True when the question has never been attempted. */
+  is_new: boolean;
+}
+
+/** Payload for submitting a review. */
+export interface ReviewSubmission {
+  question_id: number;
+  rating: number;
+  user_answer?: string | null;
+}
+
+export interface ReviewRatingOption {
+  value: number;
+  label: string;
+  hint: string;
+  days: number;
+}
+
+/** The 1-5 self-rating scale shown in the review UI. */
+export const REVIEW_RATINGS: ReviewRatingOption[] = [
+  { value: 1, label: 'Forgot', hint: 'tomorrow', days: 1 },
+  { value: 2, label: 'Poor', hint: 'in 2 days', days: 2 },
+  { value: 3, label: 'Okay', hint: 'in 4 days', days: 4 },
+  { value: 4, label: 'Good', hint: 'in 7 days', days: 7 },
+  { value: 5, label: 'Easy', hint: 'in 14 days', days: 14 },
+];
