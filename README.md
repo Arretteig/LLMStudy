@@ -105,8 +105,11 @@ template links use `SET NULL` so deleting one never destroys your history.
 
 ## Seed data
 
-`db/seed/nca-genl.json` ships **25 objectives, 29 recall questions, and 5 lab
-templates** across the five official NCA-GENL domains and their exam weights:
+`db/seed/nca-genl.json` ships **25 objectives, 100 recall questions, and 5 lab
+templates** across the five official NCA-GENL domains and their exam weights. The
+questions span multiple styles (recall, compare, when-to-use, scenario,
+troubleshooting, best-choice) and were drafted from research into the exam's
+question patterns, then adversarially reviewed for correctness.
 
 | Domain                                 | Weight |
 | -------------------------------------- | ------ |

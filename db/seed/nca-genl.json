@@ -308,6 +308,432 @@
       "question_text": "Give one example of a prompt-injection risk and a mitigation.",
       "expected_answer": "Untrusted content in the context (e.g., a fetched web page) instructs the model to ignore its system prompt or exfiltrate data. Mitigate with input isolation, output checks, and least-privilege tool access.",
       "difficulty": 3
+    },
+    {
+      "objective_title": "Transformer architecture fundamentals",
+      "question_text": "Multi-head attention splits attention into several parallel heads instead of computing a single attention function. What advantage does using multiple heads provide over a single attention head?",
+      "expected_answer": "Each head projects the input into a different representation subspace and can attend to different relationships simultaneously (e.g., one head tracks syntactic dependencies, another tracks longer-range or positional patterns). Concatenating the heads lets the model jointly capture diverse types of dependencies that a single weighted-average head would blur together, improving representational richness. Because the model dimension is split across heads, this adds little compute over a single full-dimension head.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Transformer architecture fundamentals",
+      "question_text": "In a decoder-only transformer such as GPT, what is masked (causal) self-attention, and why is it necessary during training?",
+      "expected_answer": "Masked/causal self-attention prevents each position from attending to future tokens by setting the attention scores for positions to its right to negative infinity before the softmax. It is necessary so the autoregressive model predicts the next token using only past and current context; without it, information from future tokens would leak in and make next-token prediction trivial. This preserves the left-to-right generation property the model uses at inference.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Transformer architecture fundamentals",
+      "question_text": "A team observes that GPU memory usage and latency of their transformer explode as they increase the input context length. Which property of the self-attention mechanism explains this, and name one technique to mitigate it.",
+      "expected_answer": "Self-attention computes pairwise interaction scores between every pair of tokens, so both compute and memory scale quadratically, O(n^2), with sequence length n. Mitigations include FlashAttention (IO-aware exact attention), sparse/local/sliding-window attention, linear-attention approximations, or simply reducing the context. The key point is identifying the quadratic scaling of full attention as the cause.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Neural network training basics",
+      "question_text": "During training, a model's training loss keeps decreasing while its validation loss begins to increase. What is this phenomenon called, and give two techniques to address it.",
+      "expected_answer": "This is overfitting: the model is memorizing the training data and failing to generalize to unseen data. Valid remedies include regularization (L2/weight decay), dropout, early stopping, data augmentation, adding more or more-diverse training data, or reducing model capacity. A correct answer names the diagnosis plus at least two legitimate mitigations.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Neural network training basics",
+      "question_text": "How does the Adam optimizer differ from plain stochastic gradient descent (SGD), and why is it often preferred for training deep networks?",
+      "expected_answer": "Adam maintains per-parameter adaptive learning rates using exponential moving averages of the first moment (mean/momentum of gradients) and second moment (uncentered variance), with bias correction. Unlike vanilla SGD's single fixed global learning rate, this adapts each parameter's step size, which speeds convergence and handles sparse or noisy gradients better. The trade-off is extra memory to store the two moment estimates for every parameter.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Model architecture families",
+      "question_text": "What is a Mixture-of-Experts (MoE) architecture, and what is its main advantage for scaling large language models?",
+      "expected_answer": "MoE replaces dense feedforward layers with many expert sub-networks plus a gating/router that activates only a small subset (top-k) of experts per token. This sparse activation lets total parameter count (capacity) grow very large while compute per token stays roughly constant, giving higher quality at lower per-token FLOPs than a dense model of equal size. The trade-off is high memory to hold all experts plus routing and load-balancing complexity.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Model architecture families",
+      "question_text": "Contrast an encoder-decoder (sequence-to-sequence, e.g., T5/BART) architecture with a decoder-only architecture. For what kind of task is the encoder-decoder design especially well suited?",
+      "expected_answer": "An encoder-decoder uses a bidirectional encoder to build a full representation of the input, then a separate decoder that cross-attends to that encoding while generating the output; a decoder-only model processes one concatenated stream with causal (unidirectional) attention. Encoder-decoder is especially suited to transduction/seq2seq tasks with a distinct input-to-output mapping, such as machine translation and summarization, where fully bidirectional understanding of the source is valuable. The key distinction is the dedicated bidirectional encoder plus cross-attention versus a single causal stack.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Pre-training, inference, and scaling laws",
+      "question_text": "You must minimize the inference latency of an LLM serving a real-time chatbot on NVIDIA GPUs, using optimizations such as layer/kernel fusion, kernel auto-tuning, and INT8/FP8 quantization. Which NVIDIA tool is purpose-built for this, and how does its role differ from NVIDIA Triton Inference Server?",
+      "expected_answer": "TensorRT-LLM is the right tool: it compiles and optimizes the model into a fast, low-latency inference engine via kernel fusion, auto-tuning, quantization, Tensor Core use, and in-flight batching. Triton Inference Server is the serving/deployment layer that hosts models in production with dynamic batching, concurrent multi-model execution, and multi-framework endpoints. The two are complementary: TensorRT-LLM optimizes the engine, and Triton serves it. The point is picking TensorRT-LLM and stating the optimize-vs-serve boundary.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Pre-training, inference, and scaling laws",
+      "question_text": "According to compute-optimal (Chinchilla) scaling findings, if you have a fixed compute budget, why might a smaller model trained on more tokens outperform a larger model trained on fewer tokens?",
+      "expected_answer": "Chinchilla showed that for a fixed compute budget, model size and training-token count should be scaled in roughly equal proportion, and that many large models were undertrained (too few tokens for their parameter count). A smaller but adequately trained model can therefore reach lower loss than a larger under-trained one, and it is also cheaper to run at inference. The rule of thumb is to balance parameters and data (roughly 20 tokens per parameter) and avoid undertraining.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Pre-training, inference, and scaling laws",
+      "question_text": "What is the KV cache in autoregressive transformer inference, how does it speed up generation, and what is its main cost?",
+      "expected_answer": "The KV cache stores the key and value vectors computed for previously generated tokens so they are not recomputed at each decoding step; each new token computes only its own query/key/value and attends over the cached keys and values. This turns per-step attention from recomputing the entire prefix into an incremental operation, greatly speeding decoding. Its main cost is GPU memory that grows with sequence length, layers, heads, and batch size, which can dominate memory usage and limit maximum context or batch size.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Prompt engineering and alignment concepts",
+      "question_text": "Distinguish zero-shot prompting from few-shot prompting, and give one situation where few-shot is the better choice.",
+      "expected_answer": "Zero-shot prompting gives the model only a task instruction with no worked examples, while few-shot prompting includes several input-output exemplars in the prompt (in-context learning) to demonstrate the desired format and behavior. Few-shot is the better choice when the task format is unusual or highly specific, when the output structure must be tightly constrained, or when zero-shot results are poor, because the examples steer the model without any weight updates. The trade-off is that the examples consume context-window tokens.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Prompt engineering and alignment concepts",
+      "question_text": "An LLM chatbot keeps confidently producing factually wrong answers about a company's current internal policies. Among fine-tuning, lowering the temperature, and retrieval-augmented generation (RAG), which is the most appropriate first fix, and why?",
+      "expected_answer": "RAG is the best first fix: it retrieves the relevant up-to-date policy documents from a knowledge base/vector store and grounds the model's answer in that retrieved context, directly addressing hallucination and stale or missing knowledge without retraining. Lowering temperature only reduces randomness, not factual grounding, and fine-tuning is costlier, needs curated data, and bakes in knowledge that itself goes stale. The key point is that RAG grounds responses in an authoritative external source.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Build LLM apps with Python libraries",
+      "question_text": "You are building an application whose primary job is to index a large corpus of internal documents and answer questions over them via retrieval. Between LangChain and LlamaIndex, which is the more purpose-built choice, and what is the key distinction?",
+      "expected_answer": "LlamaIndex is specialized for data ingestion, indexing, and retrieval (RAG): it provides data connectors, index structures (vector/tree/keyword), and query engines optimized for querying over documents. LangChain is a broader orchestration framework for chaining LLM calls, tools, and agents; it can do RAG but is more general-purpose. For a retrieval-centric app, LlamaIndex's indexing/query abstractions are the better fit (the two can also interoperate).",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Build LLM apps with Python libraries",
+      "question_text": "In the Hugging Face `transformers` library, what is the role of `AutoTokenizer`, and why must it be loaded from the same checkpoint as the model?",
+      "expected_answer": "AutoTokenizer converts raw text into the token IDs and attention masks the model expects and decodes IDs back into text. It must match the model checkpoint because each pretrained model has a specific vocabulary and tokenization scheme; a mismatched tokenizer produces IDs that do not correspond to what the model learned, yielding garbage or nonsensical output.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Build LLM apps with Python libraries",
+      "question_text": "Your LLM-powered app intermittently returns malformed JSON that breaks downstream parsing. Which Python-library approach most reliably enforces a valid, typed output structure, and why is it better than prompt tweaking alone?",
+      "expected_answer": "Use a schema/validation-based structured-output approach: define a Pydantic model and pair it with an output parser (e.g., LangChain's PydanticOutputParser) or a library like `instructor`, ideally backed by the model's native function/tool-calling or JSON mode. This validates the output against the schema and can retry/repair on failure. It is more reliable than raising temperature or regex-scraping free text, because the structure is enforced and checked rather than merely requested.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "NVIDIA generative-AI ecosystem",
+      "question_text": "A team needs to fine-tune a foundation model (including PEFT/LoRA) and run few-shot prompt experiments before deployment. Which NVIDIA framework is designed for this training/customization stage, and why not the alternatives?",
+      "expected_answer": "NVIDIA NeMo, an end-to-end framework for building, training, fine-tuning (including PEFT/LoRA), and customizing LLMs, and for prompt experimentation. TensorRT-LLM targets inference optimization and Triton targets production serving (both deployment-stage), while the NGC Catalog just hosts pretrained models/containers, so none of those cover the training/customization workflow.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "NVIDIA generative-AI ecosystem",
+      "question_text": "Before training, a data-science team must preprocess and transform terabytes of tabular data as fast as possible on GPUs. Which NVIDIA offering fits, and what specifically does it accelerate?",
+      "expected_answer": "NVIDIA RAPIDS, using cuDF, a pandas-like DataFrame library that runs data preprocessing/ETL and feature engineering on GPUs for large speedups over CPU-based pandas. It accelerates the data-preparation stage, distinct from model training (NeMo) and inference (TensorRT-LLM/Triton).",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "NVIDIA generative-AI ecosystem",
+      "question_text": "What is the purpose of NeMo Guardrails, and at what point in an LLM application does it operate?",
+      "expected_answer": "NeMo Guardrails is an open-source toolkit for adding programmable rails to LLM apps: it controls conversational flow and filters inputs/outputs to block unsafe, off-topic, or policy-violating content (topical, safety, and security/jailbreak rails). It operates at runtime around the LLM, on user inputs and model outputs, not during training or inference-kernel optimization.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "LLM integration and agentic workflows",
+      "question_text": "Describe the ReAct pattern used in agentic LLM workflows. What two elements does it interleave, and what capability does that enable?",
+      "expected_answer": "ReAct (Reason + Act) interleaves reasoning traces (step-by-step 'thinking') with actions (calling tools/APIs and observing their results), feeding each observation back into subsequent reasoning. This lets the agent dynamically choose tools, use intermediate results to inform the next step, and iterate toward a goal rather than answering in a single forward pass.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "LLM integration and agentic workflows",
+      "question_text": "Your assistant must fetch a user's live account balance from an internal REST API. Which LLM-integration mechanism lets the model invoke that API reliably, and how does the control flow actually work?",
+      "expected_answer": "Function/tool calling: you declare the function with a name, description, and a JSON schema of parameters; when appropriate the LLM returns a structured call (function name plus arguments), which your application code executes and then feeds the result back to the model. Crucially, the LLM does not call the API itself; it emits a structured request that your code runs, keeping execution deterministic and secure.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Software engineering best practices for LLM systems",
+      "question_text": "Because LLM outputs are non-deterministic, exact-match unit tests are brittle. What testing and evaluation practices best fit LLM systems in a CI pipeline?",
+      "expected_answer": "Use curated evaluation datasets scored with appropriate metrics rather than exact string match: semantic-similarity or task-specific metrics, rubric-based LLM-as-a-judge, and property/constraint checks (valid JSON, required fields present, no PII/unsafe content). Pin temperature (e.g., 0) for reproducibility where feasible, track eval scores over time, and gate deployments on regression thresholds.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Software engineering best practices for LLM systems",
+      "question_text": "An LLM feature concatenates untrusted user text into its system prompt. What is the primary risk, and what mitigations are considered best practice?",
+      "expected_answer": "The risk is prompt injection: malicious user input can override or hijack instructions, exfiltrate the system prompt, or trigger unintended tool actions. Best practices include clearly delimiting/separating trusted instructions from untrusted data, applying input/output guardrails and content filtering, enforcing least-privilege on any tools the model can call, validating/sanitizing outputs, and requiring human confirmation for sensitive actions rather than trusting the prompt alone for security.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Inference optimization and serving",
+      "question_text": "What is the KV cache in transformer inference, and how does it speed up autoregressive generation? What is the trade-off?",
+      "expected_answer": "The KV cache stores the key and value tensors computed for previously generated tokens in each attention layer so they are not recomputed at every step. This reduces per-token work to computing attention for only the new token instead of reprocessing the whole sequence, greatly lowering latency. The trade-off is additional GPU memory that grows with sequence length and batch size.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Inference optimization and serving",
+      "question_text": "Compare static (naive) batching with continuous (in-flight) batching for LLM serving. Why does continuous batching improve GPU throughput under concurrent, variable-length traffic?",
+      "expected_answer": "Static batching groups requests and runs the whole batch to completion, so short requests are blocked by the longest one and GPU slots idle as sequences finish. Continuous/in-flight batching schedules at the token/iteration level: finished sequences are evicted and new requests join the running batch immediately, keeping the GPU saturated. This raises throughput and lowers average latency with variable-length concurrent requests, and is a key feature of servers like Triton/TensorRT-LLM and vLLM.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Fine-tuning and parameter-efficient adaptation",
+      "question_text": "In LoRA (Low-Rank Adaptation), what does the rank hyperparameter (r) control, and what is the practical trade-off when you increase it?",
+      "expected_answer": "r is the rank of the injected low-rank decomposition (the A and B adapter matrices); it determines the adapter's capacity and the number of trainable parameters (parameter count scales roughly linearly with r). Higher r gives more expressiveness to fit the target task but adds trainable parameters, memory, compute, and overfitting risk; lower r is cheaper and better-regularized but may underfit.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Fine-tuning and parameter-efficient adaptation",
+      "question_text": "Your team wants to fine-tune and customize a foundation LLM (including supervised fine-tuning and few-shot prompt development) within the NVIDIA ecosystem. Which NVIDIA framework is purpose-built for this, and why would TensorRT-LLM be the wrong choice?",
+      "expected_answer": "NVIDIA NeMo is the framework for training, fine-tuning, customization, and prompt development. TensorRT-LLM is wrong because it targets inference optimization (low latency, kernel/layer fusion, quantization) rather than model training/customization; Triton Inference Server likewise handles serving/deployment, not fine-tuning.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Fine-tuning and parameter-efficient adaptation",
+      "question_text": "After fully fine-tuning a general-purpose LLM on a small, narrow domain dataset, the model now performs worse on general tasks it previously handled well. What is this phenomenon called, and name one mitigation.",
+      "expected_answer": "Catastrophic forgetting: updating all weights on narrow data overwrites previously learned general capabilities. Mitigations include using PEFT (LoRA/adapters) that freeze the base weights, lowering the learning rate, using fewer epochs, mixing in general/replay data, or adding regularization.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Evaluation metrics for LLMs",
+      "question_text": "How does BERTScore differ fundamentally from BLEU when scoring generated text against a reference?",
+      "expected_answer": "BLEU measures surface n-gram overlap (exact token matches) and penalizes valid paraphrases. BERTScore uses contextual embeddings to compute semantic similarity between reference and candidate tokens, rewarding meaning-preserving paraphrases even without lexical overlap. In short: BERTScore captures semantics, BLEU captures lexical/surface match.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Evaluation metrics for LLMs",
+      "question_text": "When evaluating a code-generation model, what does the pass@k metric measure?",
+      "expected_answer": "pass@k estimates the probability that at least one of k independently sampled generations passes the problem's functional/unit tests. It is an execution-based correctness metric (not text-similarity); a higher pass@k means the model is more likely to produce a working solution within k attempts.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Evaluation metrics for LLMs",
+      "question_text": "You evaluate a toxicity/guardrail classifier where only about 2% of examples are actually toxic, and the model reports 98% accuracy. Why is accuracy misleading here, and which metric(s) should you report instead?",
+      "expected_answer": "With heavy class imbalance a trivial 'always negative' predictor scores ~98% accuracy while catching zero toxic cases, so accuracy hides poor minority-class detection. Report precision, recall, and F1 (or PR-AUC) on the toxic class to reflect true detection performance.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Experiment design and model comparison",
+      "question_text": "Model A scores 71.2% and Model B scores 70.8% on your benchmark, each from a single evaluation run. A teammate declares A the winner. What is the flaw in that conclusion, and what should you do before deciding?",
+      "expected_answer": "A 0.4-point gap from single runs may fall within run-to-run variance and not be statistically significant. Run multiple seeds/runs, report the mean with variance or confidence intervals, apply a significance test, and ensure both models used the same fixed evaluation set before concluding A is better.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Experiment design and model comparison",
+      "question_text": "In model development, what is the distinct role of a validation (dev) set versus a test set, and why must they be kept separate?",
+      "expected_answer": "The validation set is used during development to tune hyperparameters and select models/checkpoints; the test set is used once at the end to give an unbiased estimate of generalization. Reusing or tuning on the test set leaks information and inflates (overfits) the reported score.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "LLM-as-a-judge and automated evaluation",
+      "question_text": "You use an LLM to judge which of two responses is better, presenting them as 'Response 1' and 'Response 2', and notice it disproportionately favors whichever is listed first. What bias is this, and how do you mitigate it?",
+      "expected_answer": "Position (order) bias. Mitigate by swapping the order of the two responses and averaging over both orderings (or randomizing position), only counting a win when the judgment is consistent across orders; calibrated/structured prompts can also help.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "LLM-as-a-judge and automated evaluation",
+      "question_text": "For evaluating open-ended, multi-turn chatbot responses that have no single correct reference answer, why might LLM-as-a-judge be preferable to BLEU or ROUGE?",
+      "expected_answer": "BLEU/ROUGE require a reference and only measure n-gram overlap, so they fail on open-ended tasks with many equally valid phrasings. An LLM judge is reference-free (or reference-flexible) and can assess helpfulness, coherence, factual correctness, and instruction-following semantically rather than by surface match.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Reproducibility and validation",
+      "question_text": "You fixed the random seed, but two runs of the same fine-tuning job still produce slightly different results. Give two common causes of this residual non-determinism.",
+      "expected_answer": "Common causes include non-deterministic GPU/cuDNN kernels (e.g., atomic reductions unless deterministic mode is forced), differing library/CUDA/driver/hardware versions, non-deterministic data-loader ordering across worker threads, and floating-point/mixed-precision accumulation or distributed reduction order differences.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Reproducibility and validation",
+      "question_text": "To make an LLM's text generations reproducible for a validation report, which decoding configuration should you use and why?",
+      "expected_answer": "Use greedy/deterministic decoding, i.e., temperature 0 (or a fixed sampling seed with fixed top-p/top-k), because sampling with temperature > 0 injects randomness that yields different outputs each run. Also pin the model version and the exact prompt template so runs are fully reproducible.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Text data cleaning and feature engineering",
+      "question_text": "In text feature engineering, what does TF-IDF (Term Frequency–Inverse Document Frequency) compute, and why does it automatically down-weight words like 'the' and 'is'?",
+      "expected_answer": "TF-IDF weights a term by its frequency within a document (TF) multiplied by the inverse of how many documents in the corpus contain it (IDF). Words appearing in almost every document (stop-words like 'the') get a low IDF and thus a low weight, while terms distinctive to a few documents score high. The result is a sparse vector that emphasizes discriminative words for retrieval or classification.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Text data cleaning and feature engineering",
+      "question_text": "When normalizing text, how does lemmatization differ from stemming, and what is the practical trade-off between them?",
+      "expected_answer": "Stemming crudely chops affixes with heuristic rules (e.g., 'studies'->'studi') — fast but may yield non-words. Lemmatization uses a vocabulary and morphology (often plus part-of-speech) to map a word to its valid dictionary base form (e.g., 'studies'->'study', 'better'->'good'). Trade-off: lemmatization is more accurate/linguistically correct but slower; stemming is faster and simpler.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Text data cleaning and feature engineering",
+      "question_text": "You are preparing a web-scraped corpus for LLM training. What specific cleaning and normalization steps address HTML markup, encoding artifacts, and boilerplate, and why does each matter?",
+      "expected_answer": "Strip HTML/markup tags, normalize character encoding (e.g., Unicode NFC/NFKC, remove mojibake), remove boilerplate/navigation/repeated templates, normalize whitespace, and optionally filter non-target languages or low-quality/near-duplicate documents. Each step removes noise so the model learns real language rather than markup or artifacts, and avoids wasting tokens and skewing corpus statistics.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Tokenization and embeddings",
+      "question_text": "What does a learned word or sentence embedding vector represent, and what metric is most commonly used to measure semantic similarity between two embeddings?",
+      "expected_answer": "An embedding maps text to a dense vector in a continuous space where geometric proximity reflects semantic/contextual similarity — similar meanings lie close together. Cosine similarity (the cosine of the angle between two vectors, focusing on direction not magnitude) is the standard measure; values nearer 1 indicate greater similarity.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Tokenization and embeddings",
+      "question_text": "Contrast static embeddings (Word2Vec/GloVe) with contextual embeddings produced by transformer models like BERT. Which handles polysemy, and why?",
+      "expected_answer": "Static embeddings assign one fixed vector per word regardless of context, so 'bank' (river vs. money) shares a single vector. Contextual embeddings are computed per occurrence from the surrounding sentence, giving the same word different vectors in different contexts and thus resolving polysemy/word sense. Contextual embeddings capture context and disambiguation; static ones are cheaper and context-independent.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Tokenization and embeddings",
+      "question_text": "For a semantic search system that must match a query to relevant documents even when they share no exact keywords, would you index sparse TF-IDF vectors or dense neural (sentence) embeddings? Justify your choice.",
+      "expected_answer": "Choose dense neural embeddings: they encode semantic meaning and can match paraphrases and synonyms with no lexical overlap (e.g., 'car' vs. 'automobile') via vector similarity. TF-IDF is purely lexical/exact-term matching and fails when wording differs. (Hybrid systems combine both — e.g., BM25 plus dense retrieval — but the dense embeddings provide the semantic matching.)",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Interpreting statistical metrics",
+      "question_text": "What does perplexity measure for a language model, and does a lower or higher value indicate a better model?",
+      "expected_answer": "Perplexity measures how well a language model predicts a sample — the exponential of the average per-token cross-entropy (negative log-likelihood), interpretable as the model's average uncertainty or effective branching factor per token. Lower perplexity means the model assigns higher probability to the actual text, i.e., a better fit. It is only meaningfully comparable across models that share the same tokenization/vocabulary and evaluation data.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Interpreting statistical metrics",
+      "question_text": "A fraud-detection classifier reports 99% overall accuracy, yet it misses most actual fraud. Explain why accuracy is misleading here and whether you would prioritize precision or recall.",
+      "expected_answer": "With severe class imbalance, always predicting the majority ('not fraud') yields high accuracy while catching zero fraud, so accuracy is uninformative. Evaluate with precision (of flagged cases, how many are truly fraud) and recall (of all fraud, how many were caught). Here you typically prioritize recall to minimize missed fraud (accepting more false positives), while watching precision, and report F1 or PR-AUC instead of accuracy.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Data visualization for insight",
+      "question_text": "You have a tabular dataset with 30 numeric features and want to quickly spot pairs of strongly correlated (redundant) features. Which visualization is best suited, and what would you look for?",
+      "expected_answer": "A correlation-matrix heatmap: pairwise Pearson (or Spearman) correlations rendered as a color-coded grid. Look for cells with high absolute correlation (near +1 or -1) indicating redundant or multicollinear features that could be dropped or combined. Scatter/pair plots complement it for inspecting individual pairs in detail.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Data visualization for insight",
+      "question_text": "A multi-class text classifier shows good overall accuracy, but users report that certain categories are almost always wrong. Which visualization best diagnoses this, and what does it reveal that a single accuracy number cannot?",
+      "expected_answer": "A confusion matrix (true class vs. predicted class, shown as a heatmap). It exposes per-class performance and which specific classes are being confused with which (off-diagonal concentrations), revealing systematic misclassification and class-imbalance effects that an aggregate accuracy score hides — guiding targeted data or label fixes.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "GPU-accelerated data processing",
+      "question_text": "Within the RAPIDS ecosystem, which library would you choose to train GPU-accelerated machine-learning models (e.g., k-means, random forest) on a dataframe, versus performing the dataframe ETL itself?",
+      "expected_answer": "Use cuML for GPU-accelerated ML algorithms (scikit-learn-like API: k-means, random forest, PCA, logistic regression, etc.), while cuDF performs the dataframe/ETL work (loading, joins, group-by, filtering). cuGraph handles graph analytics. The boundary: cuDF = data preparation, cuML = model training, both on GPU to avoid CPU bottlenecks.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "GPU-accelerated data processing",
+      "question_text": "Your team ports a pandas pipeline to RAPIDS cuDF, but on a small (few-MB) CSV it runs slower than pandas. What explains this, and when does GPU acceleration actually pay off?",
+      "expected_answer": "For tiny datasets, fixed overheads — transferring data across the PCIe bus into GPU memory and kernel-launch latency — dominate and can exceed the compute savings, so cuDF shows no benefit or is slower. GPU acceleration pays off on large datasets and heavy parallel operations where throughput gains outweigh transfer overhead; keeping data resident on the GPU across steps (avoiding repeated host-device copies) is also key.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Bias detection and mitigation",
+      "question_text": "What is counterfactual data augmentation, and how does it help mitigate bias in an LLM's training data?",
+      "expected_answer": "It generates additional training examples by swapping protected/demographic attribute terms (e.g., swapping gender or ethnicity words) while keeping the rest of the sentence identical, so the model sees balanced associations across groups. This is a pre-processing (data-level) mitigation that weakens spurious correlations between outcomes and protected attributes.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Bias detection and mitigation",
+      "question_text": "Distinguish the fairness metrics 'demographic parity' and 'equalized odds.' Which one conditions on the ground-truth label?",
+      "expected_answer": "Demographic parity requires equal positive-prediction rates across groups regardless of the true label. Equalized odds requires equal true-positive AND false-positive rates across groups, so it conditions on the ground-truth label. Parity ignores actual outcomes (and can force unequal error rates), whereas equalized odds accounts for them.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Bias detection and mitigation",
+      "question_text": "A bank uses an LLM to pre-screen loan applications and wants to check whether approval rates differ unfairly across protected groups. Which metric best quantifies this, and what threshold is commonly used as a red flag?",
+      "expected_answer": "Compute the disparate (adverse) impact ratio = selection/approval rate of the disadvantaged group divided by that of the advantaged group. By the four-fifths (80%) rule, a ratio below 0.8 signals potential adverse impact/bias that warrants investigation and mitigation.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Content filtering and hallucination mitigation",
+      "question_text": "Which NVIDIA tool lets you add programmable rails to an LLM application to keep conversations on-topic and block unsafe or off-limits responses, and what mechanism does it use?",
+      "expected_answer": "NVIDIA NeMo Guardrails. It lets developers define input, dialog, and output rails (e.g., topical, safety/moderation, jailbreak, and fact-checking rails), commonly authored in the Colang language, that intercept and filter user inputs and model outputs at runtime.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Content filtering and hallucination mitigation",
+      "question_text": "Differentiate an intrinsic hallucination from an extrinsic hallucination in an LLM's output.",
+      "expected_answer": "An intrinsic hallucination directly contradicts the provided source/context (the output conflicts with the input). An extrinsic hallucination adds content that cannot be verified from the source (it is unsupported/ungrounded rather than contradictory). Both are unfaithful, but intrinsic conflicts with the source while extrinsic is simply unverifiable.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Content filtering and hallucination mitigation",
+      "question_text": "A RAG chatbot retrieves documents but still fabricates answers that the retrieved passages do not support. Give two likely causes and a corresponding fix for each.",
+      "expected_answer": "(1) Retrieval returns irrelevant/low-quality context (poor embeddings, bad chunking) — fix with better chunking, a stronger embedding model, or a re-ranker. (2) The model ignores the context and falls back on parametric knowledge — fix by instructing it to answer only from provided context, requiring citations/grounding, or adding a faithfulness/groundedness check that rejects unsupported answers.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Privacy, security, and consent",
+      "question_text": "What is differential privacy, and how is it typically applied when training an LLM on sensitive data?",
+      "expected_answer": "Differential privacy is a formal guarantee, bounded by a privacy budget (epsilon), that a model's outputs reveal essentially nothing about whether any single individual's record was in the training set. In LLM training it is usually implemented with DP-SGD, which clips per-example gradients and adds calibrated noise, limiting memorization and leakage of individual records.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Privacy, security, and consent",
+      "question_text": "Researchers show they can prompt your deployed model into reproducing verbatim chunks of its training data, including personal information. Name this class of attack and give two mitigations.",
+      "expected_answer": "This is a training-data extraction attack (related to memorization and membership inference). Mitigations include deduplicating and scrubbing/redacting PII from training data, applying differential privacy (DP-SGD), reducing overfitting (fewer epochs), and adding output filters that block emitted PII.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Responsible and ethical AI practices",
+      "question_text": "Distinguish a 'datasheet for datasets' from a 'model card.' What does each document, and when would you produce each?",
+      "expected_answer": "A datasheet for datasets documents a dataset's motivation, composition, collection process, preprocessing, and recommended/discouraged uses. A model card documents a trained model's intended use, performance across conditions and subgroups, limitations, and ethical considerations. You produce a datasheet when releasing or curating data, and a model card when releasing a model.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Responsible and ethical AI practices",
+      "question_text": "A hospital wants to deploy an LLM that suggests possible diagnoses. Which responsible-AI practice most directly preserves accountability and reduces harm from incorrect outputs?",
+      "expected_answer": "Keep a qualified human in the loop (human oversight) who reviews outputs and remains accountable for final decisions, rather than letting the model act autonomously. Pair this with clear disclosure that outputs are AI-generated decision support, not definitive medical advice.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Safety and alignment risks in deployment",
+      "question_text": "What is Reinforcement Learning from Human Feedback (RLHF), and what alignment problem does it address?",
+      "expected_answer": "RLHF fine-tunes an LLM by training a reward model on human preference rankings of outputs, then optimizing the policy (e.g., with PPO) to maximize that reward. It aligns model behavior with human preferences/values—making outputs more helpful, honest, and harmless—beyond what next-token pretraining alone achieves.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Safety and alignment risks in deployment",
+      "question_text": "Before releasing a customer-facing LLM, your team finds it can be coerced into producing disallowed content via role-play 'jailbreak' prompts. Describe a defense-in-depth strategy to reduce this risk in deployment.",
+      "expected_answer": "Layer multiple defenses rather than relying on one: proactive adversarial red-teaming before launch, safety/refusal fine-tuning, input and output guardrails (e.g., NeMo Guardrails jailbreak and moderation rails), a hardened system prompt with explicit constraints, and continuous monitoring/logging with rapid rule updates. No single layer is sufficient on its own.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "LLM-as-a-judge and automated evaluation",
+      "question_text": "You deploy a retrieval-augmented generation (RAG) system and want to evaluate it automatically without human labels, using an LLM as the judge (as in frameworks like RAGAS). Beyond overall answer quality, name two RAG-specific dimensions the judge should score and explain what failure each one detects.",
+      "expected_answer": "Faithfulness / groundedness: whether every claim in the generated answer is actually supported by the retrieved context — detects hallucinations and unsupported claims from the generator. Context relevance (and/or context recall/precision): whether the retrieved chunks are actually relevant to the query and contain the needed information — detects retriever failures. A third is answer relevance: whether the answer actually addresses the question. Scoring retrieval and generation separately lets you localize whether a bad answer came from bad retrieval or bad generation. RAGAS uses an LLM judge to produce these scores without gold labels.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Tokenization and embeddings",
+      "question_text": "In a semantic-search / RAG retriever, why is cosine similarity typically used to compare a query embedding with document embeddings rather than raw Euclidean distance, and what do cosine values near 1, near 0, and negative indicate?",
+      "expected_answer": "Cosine similarity measures the angle between two vectors and ignores their magnitude, so it captures semantic orientation regardless of vector length (embedding norms vary with text length/token frequency, which Euclidean distance would conflate with meaning). Near 1 = vectors point almost the same direction = semantically very similar; near 0 = orthogonal / unrelated; negative = opposing meaning. Embeddings are often L2-normalized so nearest-neighbor ranking by cosine reflects meaning. (On normalized vectors, cosine ranking and Euclidean ranking coincide.)",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Inference optimization and serving",
+      "question_text": "Explain speculative decoding as an LLM inference optimization. How does it reduce per-token latency, and why does it not change the target model's output distribution?",
+      "expected_answer": "A small, fast draft model proposes several candidate future tokens, and the large target model verifies all of them in a single parallel forward pass. Tokens that agree with what the target would have produced are accepted; at the first disagreement it keeps the target's token and continues from there. Because the accept/reject step follows a rejection-sampling scheme calibrated to the target's probabilities, the final output is distributed identically to running the target model alone — but multiple tokens can be emitted per expensive target forward pass, cutting latency. Speedup depends on the draft model's acceptance rate.",
+      "difficulty": 4
+    },
+    {
+      "objective_title": "Neural network training basics",
+      "question_text": "One model's training loss oscillates wildly and sometimes diverges to NaN, while a teammate's model trains extremely slowly and barely improves over many epochs. Which single hyperparameter most likely explains both symptoms, and what is happening in each case?",
+      "expected_answer": "The learning rate. Too high: update steps overshoot the minimum, so loss oscillates or diverges/explodes to NaN. Too low: updates are tiny, so convergence is extremely slow and the model can stall in a poor region. Remedies: tune the LR (e.g., an LR range test), add warmup and a decay schedule, use an adaptive optimizer (Adam), and apply gradient clipping to curb divergence.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Data visualization for insight",
+      "question_text": "You have thousands of 768-dimensional text embeddings and want to visually inspect whether documents form meaningful clusters. Which visualization approach is appropriate, and what key caveat must you keep in mind when interpreting the plot?",
+      "expected_answer": "Apply a dimensionality-reduction method — t-SNE or UMAP (or linear PCA) — to project the embeddings to 2D/3D and make a scatter plot, coloring points by label or cluster. Caveat: t-SNE/UMAP are nonlinear and stochastic; absolute distances, cluster sizes, and the gaps between clusters can be distorted, and results depend on hyperparameters (perplexity / n_neighbors) and the random seed. So apparent clusters and relative distances should not be over-interpreted as exact geometric truth; validate with quantitative clustering metrics.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "GPU-accelerated data processing",
+      "question_text": "Your cuDF preprocessing job crashes with an out-of-memory error because the dataset is larger than a single GPU's memory. Which RAPIDS approach lets you keep GPU acceleration while scaling beyond one GPU's memory, and how does it work?",
+      "expected_answer": "Use Dask-cuDF (Dask combined with cuDF). It partitions the DataFrame into many smaller chunks and processes them lazily and in parallel across multiple GPUs and/or by streaming partitions, so no single partition must fit in one GPU's memory. It exposes a cuDF/pandas-like API while distributing the workload across a multi-GPU cluster, enabling out-of-core and multi-GPU scaling for datasets too large for one device.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Privacy, security, and consent",
+      "question_text": "Your application forwards user support tickets to a third-party LLM API, and regulations require that personal data not be exposed to the vendor. What preprocessing safeguard should you apply before the text leaves your system, and how can you keep the model's output usable?",
+      "expected_answer": "De-identify / redact PII before the API call: detect and mask names, emails, phone numbers, account/SSN numbers, etc. (via a PII-detection/NER tool plus regex) so raw personal data never reaches the external API — this enforces data minimization. To keep the output usable, replace entities with consistent pseudonymous placeholder tokens (e.g., [NAME_1], [EMAIL_1]) so the model can still reason about them, then re-identify/restore the real values in the response afterward. Also cover it with user consent, a data-processing agreement, and not logging raw PII.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Interpreting statistical metrics",
+      "question_text": "A classifier flags potentially toxic content for human moderation review. Define the precision/recall trade-off in this context, and state which metric you would prioritize and why.",
+      "expected_answer": "Precision = of the items the model flags, the fraction that are truly toxic (low precision means many false positives and wasted reviewer time). Recall = of all truly toxic items, the fraction the model catches (low recall means toxic content slips through as false negatives). The two trade off against each other via the decision threshold. For a safety/harm-prevention filter you generally prioritize recall — catching as much harmful content as possible even at the cost of more false positives — because a missed toxic item is more costly than an over-flag that a human can dismiss; F1 or a precision-recall curve helps balance the choice.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "LLM integration and agentic workflows",
+      "question_text": "Walk through the core components and runtime flow of a retrieval-augmented generation (RAG) pipeline, from raw documents to a grounded answer. Specifically explain the roles of chunking, the embedding model, and the vector database.",
+      "expected_answer": "Offline ingestion: split documents into chunks (chunking — sized so a relevant passage fits and retrieval stays granular), embed each chunk with an embedding model, and store the vectors plus their source text in a vector database/index. Query time: embed the user's query with the same embedding model, run a similarity search (cosine / approximate-nearest-neighbor) in the vector DB to retrieve the top-k most relevant chunks, insert those chunks into the prompt as context, and have the LLM generate an answer grounded in that retrieved context (often with citations). Using the same embedding model for docs and query is essential, and grounding the answer in retrieved text reduces hallucination and supplies up-to-date/proprietary knowledge.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Reproducibility and validation",
+      "question_text": "A colleague cannot reproduce your LLM evaluation numbers even when running the same script against the same model. Identify the main sources of non-determinism and the steps that make the run reproducible.",
+      "expected_answer": "Sources: sampling randomness (temperature > 0, top-p/top-k), unset random seeds (Python/NumPy/framework/CUDA), unpinned model checkpoint or library versions, silently-updated hosted API model endpoints, data-ordering differences, and nondeterministic GPU kernels. Steps: set temperature=0 (greedy decoding) or fix all seeds; pin the exact model version/checkpoint and library/dependency versions and record them; freeze the evaluation set and its ordering; enable deterministic algorithm settings where available; and log the full config (prompts, params, versions) so the run can be re-created exactly.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Experiment design and model comparison",
+      "question_text": "When comparing two fine-tuned models, a teammate reports 98% evaluation accuracy, yet the chosen model performs poorly in production. You discover that some evaluation examples also appeared in the fine-tuning data. What is this problem called, why does it inflate metrics, and how should the data be split to prevent it?",
+      "expected_answer": "Data leakage (train-test contamination): evaluation examples — or near-duplicates of them — overlapped with the training data, so the model is being scored on content it effectively memorized, producing optimistically inflated metrics that fail to generalize to unseen production data. Prevention: maintain strictly disjoint train/validation/test splits, deduplicate across splits (including near-duplicates and, for time series, respect temporal order), split the data before making preprocessing/feature decisions, and reserve a held-out test set that is never used for training or hyperparameter tuning so reported numbers reflect truly unseen data.",
+      "difficulty": 3
     }
   ],
   "labTemplates": [
@@ -323,7 +749,10 @@
       "suggested_commands": "zero_shot=\"Summarize the following paragraph in one sentence: <text>\"\nfew_shot=\"Here are examples:\\n<ex1>\\n<ex2>\\nNow summarize: <text>\"",
       "difficulty": 2,
       "estimated_minutes": 30,
-      "tags": ["prompting", "few-shot"]
+      "tags": [
+        "prompting",
+        "few-shot"
+      ]
     },
     {
       "title": "Measure temperature's effect on determinism",
@@ -337,7 +766,10 @@
       "suggested_commands": "temperature in {0.7, 0.2, 0.0}; top_p=1.0; n=5",
       "difficulty": 2,
       "estimated_minutes": 20,
-      "tags": ["sampling", "reproducibility"]
+      "tags": [
+        "sampling",
+        "reproducibility"
+      ]
     },
     {
       "title": "LoRA vs full fine-tune: params and VRAM",
@@ -351,7 +783,11 @@
       "suggested_commands": "lora: r=8, alpha=16, target_modules=[q_proj, v_proj]\nbatch_size=4, epochs=1",
       "difficulty": 3,
       "estimated_minutes": 60,
-      "tags": ["fine-tuning", "lora", "vram"]
+      "tags": [
+        "fine-tuning",
+        "lora",
+        "vram"
+      ]
     },
     {
       "title": "Evaluate a summarizer with ROUGE",
@@ -365,7 +801,11 @@
       "suggested_commands": "from evaluate import load\nrouge = load('rouge')\nrouge.compute(predictions=preds, references=refs)",
       "difficulty": 3,
       "estimated_minutes": 45,
-      "tags": ["evaluation", "metrics", "summarization"]
+      "tags": [
+        "evaluation",
+        "metrics",
+        "summarization"
+      ]
     },
     {
       "title": "Ground answers with a tiny RAG pipeline",
@@ -379,7 +819,11 @@
       "suggested_commands": "chunk_size=500; top_k=4\nprompt=\"Answer using only the context. Cite chunk ids. If unknown, say you don't know.\"",
       "difficulty": 3,
       "estimated_minutes": 60,
-      "tags": ["rag", "hallucination", "retrieval"]
+      "tags": [
+        "rag",
+        "hallucination",
+        "retrieval"
+      ]
     }
   ]
 }
