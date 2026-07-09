@@ -1,9 +1,5 @@
-import express from 'express';
+import { createApp } from './app';
 import { getDb } from './db';
-import { labsRouter } from './routes/labs';
-import { objectivesRouter } from './routes/objectives';
-import { questionsRouter } from './routes/questions';
-import { reviewsRouter } from './routes/reviews';
 import { seed } from './seed';
 
 const PORT = Number(process.env.PORT ?? 3001);
@@ -20,19 +16,10 @@ if (n === 0) {
   const result = seed(db);
   console.log(
     `[seed] new database — seeded ${result.objectives} objectives, ` +
-      `${result.questions} questions, ${result.labs} labs`,
+      `${result.questions} questions, ${result.labTemplates} lab templates`,
   );
 }
 
-const app = express();
-app.use(express.json());
-
-app.get('/api/health', (_req, res) => res.json({ ok: true }));
-app.use('/api/objectives', objectivesRouter);
-app.use('/api/questions', questionsRouter);
-app.use('/api/reviews', reviewsRouter);
-app.use('/api/labs', labsRouter);
-
-app.listen(PORT, () => {
+createApp().listen(PORT, () => {
   console.log(`LLMStudy API listening on http://localhost:${PORT}`);
 });

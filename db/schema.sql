@@ -83,25 +83,31 @@ CREATE TABLE IF NOT EXISTS answer_attempts (
 CREATE INDEX IF NOT EXISTS idx_attempts_question ON answer_attempts(question_id, attempted_date);
 
 -- =========================================================================
--- M4: Lab notebook
+-- M4: Lab system — templates (guided exercises) + runs (my attempts)
 -- =========================================================================
--- One row per hands-on experiment, following hypothesis -> change -> observe ->
--- explain -> next. Optionally tied to an objective; tagged via the junction.
-CREATE TABLE IF NOT EXISTS labs (
-  id              INTEGER PRIMARY KEY,
-  title           TEXT NOT NULL,
-  objective_id    INTEGER REFERENCES objectives(id) ON DELETE SET NULL,
-  hypothesis      TEXT,
-  what_changed    TEXT,
-  commands_config TEXT,   -- stored verbatim as text, not parsed
-  observed_result TEXT,
-  why_it_happened TEXT,
-  what_next       TEXT,
-  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at      TEXT NOT NULL DEFAULT (datetime('now'))
+-- NOTE: this replaces the earlier freeform `labs` table. Existing databases
+-- keep that now-unused table until `npm run db:reset`; nothing references it.
+
+-- A reusable guided exercise connected to an objective.
+CREATE TABLE IF NOT EXISTS lab_templates (
+  id                   INTEGER PRIMARY KEY,
+  title                TEXT NOT NULL,
+  objective_id         INTEGER REFERENCES objectives(id) ON DELETE SET NULL,
+  domain               TEXT,
+  goal                 TEXT,
+  background           TEXT,
+  instructions         TEXT,   -- step-by-step, stored as freeform text
+  success_criteria     TEXT,
+  reflection_questions TEXT,
+  suggested_commands   TEXT,   -- optional
+  difficulty           INTEGER CHECK (difficulty BETWEEN 1 AND 5),
+  estimated_minutes    INTEGER,
+  created_at           TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at           TEXT NOT NULL DEFAULT (datetime('now')),
+  UNIQUE (title)               -- keeps template seeding idempotent
 );
 
-CREATE INDEX IF NOT EXISTS idx_labs_objective ON labs(objective_id);
+CREATE INDEX IF NOT EXISTS idx_templates_objective ON lab_templates(objective_id);
 
 -- Canonical tag dictionary. COLLATE NOCASE dedupes case-insensitively while
 -- preserving first-seen display casing (so "LoRA" and "lora" are one tag).
@@ -111,12 +117,38 @@ CREATE TABLE IF NOT EXISTS tags (
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
--- Many-to-many labs <-> tags. Composite PK doubles as the covering index.
-CREATE TABLE IF NOT EXISTS lab_tags (
-  lab_id INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE,
-  tag_id INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
-  PRIMARY KEY (lab_id, tag_id)
+-- Many-to-many lab_templates <-> tags. Composite PK doubles as the index.
+CREATE TABLE IF NOT EXISTS template_tags (
+  template_id INTEGER NOT NULL REFERENCES lab_templates(id) ON DELETE CASCADE,
+  tag_id      INTEGER NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
+  PRIMARY KEY (template_id, tag_id)
 );
+
+-- My actual attempt at a lab. Template/objective are SET NULL on delete so run
+-- history survives even if the source template or objective is removed.
+CREATE TABLE IF NOT EXISTS lab_runs (
+  id               INTEGER PRIMARY KEY,
+  template_id      INTEGER REFERENCES lab_templates(id) ON DELETE SET NULL,
+  objective_id     INTEGER REFERENCES objectives(id) ON DELETE SET NULL,
+  status           TEXT NOT NULL DEFAULT 'not_started'
+                     CHECK (status IN ('not_started','in_progress','completed','needs_repeat')),
+  hypothesis       TEXT,
+  what_changed     TEXT,
+  commands_config  TEXT,
+  observed_result  TEXT,
+  why_it_happened  TEXT,
+  mistakes         TEXT,   -- mistakes / confusions
+  what_next        TEXT,
+  confidence_after INTEGER CHECK (confidence_after BETWEEN 1 AND 5),
+  started_at       TEXT,
+  completed_at     TEXT,
+  notes            TEXT,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_runs_template  ON lab_runs(template_id);
+CREATE INDEX IF NOT EXISTS idx_runs_objective ON lab_runs(objective_id);
 
 -- =========================================================================
 -- Extensibility hooks designed but NOT built (see README roadmap):

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { getDb, REPO_ROOT, type Db } from './db';
-import { createLab } from './labs.repo';
+import { createTemplate } from './lab-templates.repo';
 
 interface SeedObjective {
   title: string;
@@ -20,22 +20,25 @@ interface SeedQuestion {
   difficulty?: number;
 }
 
-interface SeedLab {
+interface SeedLabTemplate {
   title: string;
   objective_title?: string;
-  hypothesis?: string;
-  what_changed?: string;
-  commands_config?: string;
-  observed_result?: string;
-  why_it_happened?: string;
-  what_next?: string;
+  domain?: string;
+  goal?: string;
+  background?: string;
+  instructions?: string;
+  success_criteria?: string;
+  reflection_questions?: string;
+  suggested_commands?: string;
+  difficulty?: number;
+  estimated_minutes?: number;
   tags?: string[];
 }
 
 export interface SeedResult {
   objectives: number;
   questions: number;
-  labs: number;
+  labTemplates: number;
 }
 
 /**
@@ -50,17 +53,17 @@ export function seed(db: Db = getDb()): SeedResult {
   const parsed = JSON.parse(readFileSync(seedPath, 'utf8')) as {
     objectives?: SeedObjective[];
     questions?: SeedQuestion[];
-    labs?: SeedLab[];
+    labTemplates?: SeedLabTemplate[];
   };
 
   seedObjectives(db, parsed.objectives ?? []);
   seedQuestions(db, parsed.questions ?? []);
-  seedLabs(db, parsed.labs ?? []);
+  seedLabTemplates(db, parsed.labTemplates ?? []);
 
   return {
     objectives: count(db, 'objectives'),
     questions: count(db, 'recall_questions'),
-    labs: count(db, 'labs'),
+    labTemplates: count(db, 'lab_templates'),
   };
 }
 
@@ -123,9 +126,14 @@ function seedQuestions(db: Db, questions: SeedQuestion[]): void {
   insertAll(questions);
 }
 
-function seedLabs(db: Db, labs: SeedLab[]): void {
-  // Only seed into an empty notebook so we never resurrect deleted labs.
-  if (count(db, 'labs') > 0) return;
+function seedLabTemplates(db: Db, templates: SeedLabTemplate[]): void {
+  // Templates use INSERT via createTemplate; UNIQUE(title) makes a re-seed a
+  // no-op for existing titles. We skip titles that already exist to stay idempotent.
+  const existing = new Set(
+    (db.prepare('SELECT title FROM lab_templates').all() as { title: string }[]).map(
+      (r) => r.title,
+    ),
+  );
 
   const idByTitle = new Map<string, number>();
   for (const row of db
@@ -134,29 +142,33 @@ function seedLabs(db: Db, labs: SeedLab[]): void {
     idByTitle.set(row.title, row.id);
   }
 
-  const seedAll = db.transaction((rows: SeedLab[]) => {
-    for (const lab of rows) {
-      createLab(db, {
-        title: lab.title,
-        objective_id: lab.objective_title
-          ? idByTitle.get(lab.objective_title) ?? null
+  const seedAll = db.transaction((rows: SeedLabTemplate[]) => {
+    for (const tpl of rows) {
+      if (existing.has(tpl.title)) continue;
+      createTemplate(db, {
+        title: tpl.title,
+        objective_id: tpl.objective_title
+          ? idByTitle.get(tpl.objective_title) ?? null
           : null,
-        hypothesis: lab.hypothesis ?? null,
-        what_changed: lab.what_changed ?? null,
-        commands_config: lab.commands_config ?? null,
-        observed_result: lab.observed_result ?? null,
-        why_it_happened: lab.why_it_happened ?? null,
-        what_next: lab.what_next ?? null,
-        tags: lab.tags ?? [],
+        domain: tpl.domain ?? null,
+        goal: tpl.goal ?? null,
+        background: tpl.background ?? null,
+        instructions: tpl.instructions ?? null,
+        success_criteria: tpl.success_criteria ?? null,
+        reflection_questions: tpl.reflection_questions ?? null,
+        suggested_commands: tpl.suggested_commands ?? null,
+        difficulty: tpl.difficulty ?? null,
+        estimated_minutes: tpl.estimated_minutes ?? null,
+        tags: tpl.tags ?? [],
       });
     }
   });
-  seedAll(labs);
+  seedAll(templates);
 }
 
 function count(
   db: Db,
-  table: 'objectives' | 'recall_questions' | 'labs',
+  table: 'objectives' | 'recall_questions' | 'lab_templates',
 ): number {
   const { n } = db.prepare(`SELECT COUNT(*) AS n FROM ${table}`).get() as {
     n: number;

@@ -218,30 +218,168 @@
       "question_text": "Give one way bias can enter an LLM and one mitigation.",
       "expected_answer": "Bias commonly enters via skewed training data or annotation. Mitigations include data curation/balancing, fairness evaluation across groups, debiasing fine-tuning, and output filtering.",
       "difficulty": 2
-    }
-  ],
-  "labs": [
-    {
-      "title": "Effect of temperature on answer determinism",
-      "objective_title": "Prompt engineering and alignment concepts",
-      "hypothesis": "Lowering temperature from 0.7 to 0.0 will make repeated answers to the same factual prompt nearly identical.",
-      "what_changed": "Sampling temperature only (0.7 -> 0.2 -> 0.0), same prompt and model, 5 generations each.",
-      "commands_config": "model=llama-3.1-8b-instruct\nprompt=\"List the three main components of a transformer block.\"\ntemperature in {0.7, 0.2, 0.0}; top_p=1.0; n=5",
-      "observed_result": "At 0.7 wording varied and one run added an extra (wrong) component. At 0.0 all 5 runs were token-identical and correct.",
-      "why_it_happened": "Greedy decoding at temperature 0 always picks the argmax token, removing sampling variance; higher temperature flattens the distribution so lower-probability (sometimes wrong) tokens get chosen.",
-      "what_next": "Test whether temperature 0 hurts on a task that benefits from diversity (brainstorming), to feel the trade-off.",
-      "tags": ["prompting", "sampling", "reproducibility"]
     },
     {
-      "title": "LoRA vs full fine-tune: trainable params and VRAM",
+      "objective_title": "Neural network training basics",
+      "question_text": "What does the loss function do, and what does backpropagation compute?",
+      "expected_answer": "The loss measures how wrong the model's predictions are. Backpropagation computes the gradient of the loss with respect to every weight (via the chain rule) so gradient descent can update them.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Pre-training, inference, and scaling laws",
+      "question_text": "What do neural scaling laws describe?",
+      "expected_answer": "Predictable (roughly power-law) improvements in loss as model size, dataset size, and compute increase — used to plan how to allocate resources.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Build LLM apps with Python libraries",
+      "question_text": "What does the Hugging Face `pipeline` abstraction give you?",
+      "expected_answer": "A high-level API bundling tokenizer + model + pre/post-processing for a task (e.g., text-generation), so you can run inference in a couple of lines.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "NVIDIA generative-AI ecosystem",
+      "question_text": "What is NVIDIA NIM and what problem does it solve?",
+      "expected_answer": "NIM packages models as optimized, containerized inference microservices with standard APIs, simplifying deployment of GPU-accelerated inference.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Software engineering best practices for LLM systems",
+      "question_text": "Why should prompts be version-controlled like code?",
+      "expected_answer": "Prompts define behavior; versioning them enables reproducibility, rollback, and controlled A/B evaluation of changes.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Experiment design and model comparison",
+      "question_text": "Why hold out a fixed evaluation set when comparing models?",
+      "expected_answer": "A fixed, unseen set gives a fair, comparable measure of generalization and prevents implicitly tuning to the test data.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "LLM-as-a-judge and automated evaluation",
+      "question_text": "What is a key risk of using an LLM as a judge, and one mitigation?",
+      "expected_answer": "Judge bias/inconsistency (e.g., position or verbosity bias). Mitigate with clear rubrics, randomized answer order, multiple samples, and calibration against human labels.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Reproducibility and validation",
+      "question_text": "Name two things you must fix to reproduce an LLM experiment.",
+      "expected_answer": "Any two of: random seeds; model and library versions; decoding parameters (temperature/top_p); and the exact data splits.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Text data cleaning and feature engineering",
+      "question_text": "Why deduplicate and clean text before training or indexing?",
+      "expected_answer": "Duplicates and noise bias the model or index, waste compute, and can cause train/test leakage; cleaning improves quality and evaluation validity.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Interpreting statistical metrics",
+      "question_text": "Training loss keeps falling but validation loss rises — what is happening and what do you do?",
+      "expected_answer": "Overfitting: the model memorizes training data and generalizes worse. Respond with regularization, early stopping, or more/cleaner data.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Data visualization for insight",
+      "question_text": "What can a token-length distribution plot tell you before training?",
+      "expected_answer": "How to set max sequence length / truncation, where outliers are, and rough compute/memory needs.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "GPU-accelerated data processing",
+      "question_text": "What does RAPIDS cuDF accelerate, and how?",
+      "expected_answer": "DataFrame operations — by running them on the GPU behind a pandas-like API, for large-scale data processing.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Privacy, security, and consent",
+      "question_text": "Name one privacy risk when fine-tuning on user data and a mitigation.",
+      "expected_answer": "Memorization/leakage of PII. Mitigate with PII scrubbing, consent, access controls, or differential privacy.",
+      "difficulty": 3
+    },
+    {
+      "objective_title": "Responsible and ethical AI practices",
+      "question_text": "What is a model card and why use one?",
+      "expected_answer": "Documentation of a model's intended use, training data, performance, and limitations — supporting transparent, responsible deployment.",
+      "difficulty": 2
+    },
+    {
+      "objective_title": "Safety and alignment risks in deployment",
+      "question_text": "Give one example of a prompt-injection risk and a mitigation.",
+      "expected_answer": "Untrusted content in the context (e.g., a fetched web page) instructs the model to ignore its system prompt or exfiltrate data. Mitigate with input isolation, output checks, and least-privilege tool access.",
+      "difficulty": 3
+    }
+  ],
+  "labTemplates": [
+    {
+      "title": "Compare zero-shot and few-shot prompting",
+      "objective_title": "Prompt engineering and alignment concepts",
+      "domain": "Core Machine Learning and AI Knowledge",
+      "goal": "Understand how examples affect output quality, consistency, and failure modes.",
+      "background": "Few-shot prompting prepends a handful of input/output examples to steer the model. It often improves formatting and consistency, but the examples can also bias or mislead the model.",
+      "instructions": "1. Choose one task, such as summarizing a technical paragraph.\n2. Run the task with a zero-shot prompt.\n3. Run the same task with 2-3 examples.\n4. Compare output correctness, consistency, formatting, and any unwanted bias from the examples.\n5. Write a short explanation of when few-shot prompting helped and when it did not.",
+      "success_criteria": "I can explain the tradeoffs of zero-shot vs few-shot prompting and describe at least one failure mode introduced by examples.",
+      "reflection_questions": "When did few-shot clearly help? Did any example bias the output? How many examples were 'enough'?",
+      "suggested_commands": "zero_shot=\"Summarize the following paragraph in one sentence: <text>\"\nfew_shot=\"Here are examples:\\n<ex1>\\n<ex2>\\nNow summarize: <text>\"",
+      "difficulty": 2,
+      "estimated_minutes": 30,
+      "tags": ["prompting", "few-shot"]
+    },
+    {
+      "title": "Measure temperature's effect on determinism",
+      "objective_title": "Prompt engineering and alignment concepts",
+      "domain": "Core Machine Learning and AI Knowledge",
+      "goal": "Feel how sampling temperature trades off determinism against diversity.",
+      "background": "Temperature scales the logits before sampling. Temperature 0 is greedy (argmax) and deterministic; higher temperatures flatten the distribution and add variety.",
+      "instructions": "1. Pick one factual prompt with a single correct answer.\n2. Generate 5 completions at temperature 0.7.\n3. Repeat at 0.2 and 0.0.\n4. Note how much the wording and correctness vary at each setting.",
+      "success_criteria": "I can predict, for a given task, whether a low or high temperature is appropriate and why.",
+      "reflection_questions": "At which temperature did wrong answers appear? Where would high temperature actually be desirable?",
+      "suggested_commands": "temperature in {0.7, 0.2, 0.0}; top_p=1.0; n=5",
+      "difficulty": 2,
+      "estimated_minutes": 20,
+      "tags": ["sampling", "reproducibility"]
+    },
+    {
+      "title": "LoRA vs full fine-tune: params and VRAM",
       "objective_title": "Fine-tuning and parameter-efficient adaptation",
-      "hypothesis": "A LoRA adapter (r=8) will train a tiny fraction of parameters and fit in far less VRAM than a full fine-tune of the same model.",
-      "what_changed": "Adaptation method: full fine-tune vs LoRA (r=8, alpha=16) on the same small instruction dataset.",
-      "commands_config": "base=llama-3.1-8b\nlora: r=8, alpha=16, target_modules=[q_proj,v_proj]\nbatch_size=4, epochs=1",
-      "observed_result": "LoRA reported ~4-5M trainable params vs ~8B for full FT, and fit on a single 16GB GPU where full FT OOM'd.",
-      "why_it_happened": "LoRA freezes base weights and only learns low-rank update matrices injected into attention projections, so optimizer state (the big VRAM cost) is proportional to the tiny adapter, not the whole model.",
-      "what_next": "Add QLoRA (4-bit base) and compare VRAM and final eval loss against the r=8 LoRA run.",
+      "domain": "Experimentation",
+      "goal": "See concretely why parameter-efficient fine-tuning saves memory.",
+      "background": "Full fine-tuning updates every weight and its optimizer state. LoRA freezes the base and learns small low-rank adapters, so the optimizer state (the big VRAM cost) is tiny.",
+      "instructions": "1. Take a small instruction dataset and a base model you can load.\n2. Configure a full fine-tune; record trainable params and peak VRAM (or whether it OOMs).\n3. Configure LoRA (r=8, alpha=16) on the attention projections; record the same.\n4. Compare trainable params, peak VRAM, and final eval loss.",
+      "success_criteria": "I can state roughly how many parameters LoRA trains vs a full fine-tune and explain where the VRAM savings come from.",
+      "reflection_questions": "Which layers did LoRA target and why? What quality did you trade, if any?",
+      "suggested_commands": "lora: r=8, alpha=16, target_modules=[q_proj, v_proj]\nbatch_size=4, epochs=1",
+      "difficulty": 3,
+      "estimated_minutes": 60,
       "tags": ["fine-tuning", "lora", "vram"]
+    },
+    {
+      "title": "Evaluate a summarizer with ROUGE",
+      "objective_title": "Evaluation metrics for LLMs",
+      "domain": "Experimentation",
+      "goal": "Compute and interpret an automated evaluation metric, and feel its limits.",
+      "background": "ROUGE measures n-gram and longest-common-subsequence overlap against reference summaries. It is recall-oriented and cheap, but overlap is not the same as quality.",
+      "instructions": "1. Get 5-10 documents with reference summaries.\n2. Generate summaries with your model.\n3. Compute ROUGE-1/2/L against the references.\n4. Read 2-3 low-ROUGE outputs by hand and judge whether the score was fair.",
+      "success_criteria": "I can compute ROUGE, interpret the numbers, and give one example where ROUGE disagrees with human judgment.",
+      "reflection_questions": "Where did a good summary get a low ROUGE score? What would a better metric add?",
+      "suggested_commands": "from evaluate import load\nrouge = load('rouge')\nrouge.compute(predictions=preds, references=refs)",
+      "difficulty": 3,
+      "estimated_minutes": 45,
+      "tags": ["evaluation", "metrics", "summarization"]
+    },
+    {
+      "title": "Ground answers with a tiny RAG pipeline",
+      "objective_title": "Content filtering and hallucination mitigation",
+      "domain": "Trustworthy AI",
+      "goal": "Reduce hallucination by grounding answers in retrieved context and checking citations.",
+      "background": "Retrieval-augmented generation fetches relevant chunks and puts them in the prompt so the model answers from sources it can cite, instead of from parametric memory alone.",
+      "instructions": "1. Collect a small set of documents and split them into chunks.\n2. Embed the chunks and store them in a vector index.\n3. For each question, retrieve top-k chunks and prompt the model to answer using ONLY those chunks, with citations.\n4. Ask a question whose answer is NOT in the corpus and confirm the model abstains.",
+      "success_criteria": "I can show a grounded, cited answer AND a correct abstention on an out-of-corpus question.",
+      "reflection_questions": "Did any answer cite the wrong chunk? What happened when retrieval missed the relevant chunk?",
+      "suggested_commands": "chunk_size=500; top_k=4\nprompt=\"Answer using only the context. Cite chunk ids. If unknown, say you don't know.\"",
+      "difficulty": 3,
+      "estimated_minutes": 60,
+      "tags": ["rag", "hallucination", "retrieval"]
     }
   ]
 }

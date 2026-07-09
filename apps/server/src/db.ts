@@ -8,8 +8,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 /** Repo root, derived from this file's location (apps/server/src -> ../../..). */
 export const REPO_ROOT = resolve(__dirname, '..', '..', '..');
 
-export const DB_PATH =
-  process.env.DB_PATH ?? join(REPO_ROOT, 'db', 'data', 'study.db');
+const DEFAULT_DB_PATH = join(REPO_ROOT, 'db', 'data', 'study.db');
+
+/** Resolved lazily so tests (and the CLI) can override DB_PATH before first use. */
+export function resolveDbPath(): string {
+  return process.env.DB_PATH ?? DEFAULT_DB_PATH;
+}
+
+/** Convenience for CLI scripts that need the on-disk path (e.g. db:reset). */
+export const DB_PATH = resolveDbPath();
 
 const SCHEMA_PATH = join(REPO_ROOT, 'db', 'schema.sql');
 
@@ -21,7 +28,7 @@ export function applySchema(db: Db): void {
 }
 
 /** Open a database (defaults to the on-disk file), enable pragmas, apply schema. */
-export function openDb(path: string = DB_PATH): Db {
+export function openDb(path: string = resolveDbPath()): Db {
   const db = new Database(path);
   db.pragma('journal_mode = WAL'); // lets a future Python sidecar co-read the file
   db.pragma('foreign_keys = ON');

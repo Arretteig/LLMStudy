@@ -1,9 +1,13 @@
 import type {
   AnswerAttempt,
+  DashboardSummary,
   DueItem,
-  LabUpdate,
-  LabWithDetails,
-  NewLab,
+  LabRunUpdate,
+  LabRunWithDetails,
+  LabTemplateUpdate,
+  LabTemplateWithDetails,
+  NewLabRun,
+  NewLabTemplate,
   NewObjective,
   NewQuestion,
   Objective,
@@ -95,28 +99,65 @@ export function getHistory(questionId: number): Promise<AnswerAttempt[]> {
   return http<AnswerAttempt[]>(`/api/reviews/history/${questionId}`);
 }
 
-// ---- Labs -----------------------------------------------------------------
+// ---- Lab templates --------------------------------------------------------
 
-export function listLabs(): Promise<LabWithDetails[]> {
-  return http<LabWithDetails[]>('/api/labs');
+export function listTemplates(): Promise<LabTemplateWithDetails[]> {
+  return http<LabTemplateWithDetails[]>('/api/lab-templates');
 }
 
-export function createLab(input: NewLab): Promise<LabWithDetails> {
-  return http<LabWithDetails>('/api/labs', {
+export function createTemplate(input: NewLabTemplate): Promise<LabTemplateWithDetails> {
+  return http<LabTemplateWithDetails>('/api/lab-templates', {
     method: 'POST',
     body: JSON.stringify(input),
   });
 }
 
-export function updateLab(id: number, input: LabUpdate): Promise<LabWithDetails> {
-  return http<LabWithDetails>(`/api/labs/${id}`, {
+export function updateTemplate(
+  id: number,
+  input: LabTemplateUpdate,
+): Promise<LabTemplateWithDetails> {
+  return http<LabTemplateWithDetails>(`/api/lab-templates/${id}`, {
     method: 'PUT',
     body: JSON.stringify(input),
   });
 }
 
-export async function deleteLab(id: number): Promise<void> {
-  const res = await fetch(`/api/labs/${id}`, { method: 'DELETE' });
+export function deleteTemplate(id: number): Promise<void> {
+  return del(`/api/lab-templates/${id}`);
+}
+
+// ---- Lab runs -------------------------------------------------------------
+
+export function listRuns(): Promise<LabRunWithDetails[]> {
+  return http<LabRunWithDetails[]>('/api/lab-runs');
+}
+
+export function createRun(input: NewLabRun): Promise<LabRunWithDetails> {
+  return http<LabRunWithDetails>('/api/lab-runs', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function updateRun(id: number, input: LabRunUpdate): Promise<LabRunWithDetails> {
+  return http<LabRunWithDetails>(`/api/lab-runs/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteRun(id: number): Promise<void> {
+  return del(`/api/lab-runs/${id}`);
+}
+
+// ---- Dashboard ------------------------------------------------------------
+
+export function getDashboard(): Promise<DashboardSummary> {
+  return http<DashboardSummary>('/api/dashboard');
+}
+
+async function del(url: string): Promise<void> {
+  const res = await fetch(url, { method: 'DELETE' });
   if (!res.ok && res.status !== 204) {
     const body = (await res.json().catch(() => ({}))) as { error?: string };
     throw new Error(body.error ?? `${res.status} ${res.statusText}`);

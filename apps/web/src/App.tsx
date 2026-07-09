@@ -1,12 +1,19 @@
 import { NavLink, Route, Routes } from 'react-router-dom';
-import { LabsPage } from './pages/Labs';
+import { DashboardPage } from './pages/Dashboard';
+import { LabRunsPage } from './pages/LabRuns';
+import { LabTemplatesPage } from './pages/LabTemplates';
 import { ObjectivesPage } from './pages/Objectives';
 import { QuestionsPage } from './pages/Questions';
 import { ReviewPage } from './pages/Review';
 
-// Modules coming in later milestones. Shown greyed-out so the shell is visible
-// but it's obvious what isn't built yet.
-const COMING_SOON = ['Dashboard'];
+const NAV = [
+  { to: '/', label: 'Dashboard', end: true },
+  { to: '/objectives', label: 'Objectives' },
+  { to: '/questions', label: 'Questions' },
+  { to: '/review', label: 'Review' },
+  { to: '/labs', label: 'Labs' },
+  { to: '/runs', label: 'Runs' },
+];
 
 export function App() {
   return (
@@ -16,32 +23,22 @@ export function App() {
           LLMStudy <span className="brand-sub">· NCA-GENL</span>
         </div>
         <nav className="nav">
-          <NavLink to="/" end className="nav-link">
-            Objectives
-          </NavLink>
-          <NavLink to="/questions" className="nav-link">
-            Questions
-          </NavLink>
-          <NavLink to="/review" className="nav-link">
-            Review
-          </NavLink>
-          <NavLink to="/labs" className="nav-link">
-            Labs
-          </NavLink>
-          {COMING_SOON.map((label) => (
-            <span key={label} className="nav-link nav-soon" title="Coming in a later milestone">
+          {NAV.map(({ to, label, end }) => (
+            <NavLink key={to} to={to} end={end} className="nav-link">
               {label}
-            </span>
+            </NavLink>
           ))}
         </nav>
       </header>
 
       <main className="content">
         <Routes>
-          <Route path="/" element={<ObjectivesPage />} />
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/objectives" element={<ObjectivesPage />} />
           <Route path="/questions" element={<QuestionsPage />} />
           <Route path="/review" element={<ReviewPage />} />
-          <Route path="/labs" element={<LabsPage />} />
+          <Route path="/labs" element={<LabTemplatesPage />} />
+          <Route path="/runs" element={<LabRunsPage />} />
         </Routes>
       </main>
     </div>

@@ -14,5 +14,5 @@ for (const suffix of ['', '-wal', '-shm']) {
 const db = openDb();
 const result = seed(db);
 console.log(
-  `Database reset. Objectives: ${result.objectives}, questions: ${result.questions}, labs: ${result.labs}.`,
+  `Database reset. Objectives: ${result.objectives}, questions: ${result.questions}, lab templates: ${result.labTemplates}.`,
 );
