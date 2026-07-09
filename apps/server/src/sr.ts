@@ -2,12 +2,21 @@
 // (no DB, no side effects) so it is easy to unit-test and later swap for a
 // smarter algorithm without touching storage.
 //
-// MVP rule (from the product spec):
+// Base ladder (from the product spec) — also the interval for a FIRST attempt:
 //   rating 1 (forgot) -> review in  1 day
 //   rating 2 (poor)   -> review in  2 days
 //   rating 3 (okay)   -> review in  4 days
 //   rating 4 (good)   -> review in  7 days
 //   rating 5 (easy)   -> review in 14 days
+//
+// Growing ladder (F11): repeated success multiplies the previous interval
+// (schedule() below) instead of re-reading the fixed ladder, so a well-known
+// card backs off exponentially; any lapse (rating 1-2) resets growth.
+//
+// TIMEZONE: todayIso()/localTimestamp() emit LOCAL wall-clock values — these
+// feed attempted_date / next_review_date and all analytics. created_at /
+// updated_at columns are UTC (SQLite datetime('now')) bookkeeping only and
+// must never feed analytics, or day boundaries shift by the UTC offset.
 
 import { ValidationError } from './errors';
 
@@ -66,4 +75,77 @@ export function nextReviewDate(fromIsoDate: string, rating: number): string {
  */
 export function isDue(nextReview: string | null, today: string = todayIso()): boolean {
   return nextReview === null || nextReview <= today;
+}
+
+// ---------------------------------------------------------------------------
+// Growing-ladder scheduler (F11)
+// ---------------------------------------------------------------------------
+
+/** A question's current scheduling state (the cache columns on recall_questions). */
+export interface ScheduleState {
+  /** Current interval in days; null when the question has never been attempted. */
+  intervalDays: number | null;
+  /** How many times the card has lapsed (rated 1-2). */
+  lapses: number;
+}
+
+/** Interval growth per successful rating (applied to the previous interval). */
+const GROWTH_MULTIPLIER: Record<number, number> = {
+  3: 1.2,
+  4: 2.0,
+  5: 2.5,
+};
+
+/** Absolute ceiling on any interval, exam date or not. */
+export const MAX_INTERVAL_DAYS = 60;
+
+/** Whole days from `fromIso` to `toIso` (negative when `toIso` is earlier). UTC calendar arithmetic, DST-immune. */
+export function daysBetween(fromIso: string, toIso: string): number {
+  const [fy, fm, fd] = fromIso.slice(0, 10).split('-').map(Number);
+  const [ty, tm, td] = toIso.slice(0, 10).split('-').map(Number);
+  return Math.round(
+    (Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000,
+  );
+}
+
+/**
+ * Compute the next interval from the previous state and a 1-5 self-rating.
+ *
+ *   rating 1-2 (lapse): interval snaps back to the base ladder value and the
+ *     lapse counter increments — forgetting resets all accumulated growth.
+ *   rating 3-5: interval = max(ladder value, round(previous * multiplier)),
+ *     so a first attempt (or a card fresh off a lapse) starts on the ladder
+ *     and repeated success backs off exponentially.
+ *
+ * Caps: 60 days absolute. When an exam date is set (and still ahead), the cap
+ * tightens to 15% of the days remaining — per Cepeda et al.'s optimal-gap
+ * heuristic (best study gap ~10-20% of the retention interval), which also
+ * guarantees every card gets a touch near exam day.
+ */
+export function schedule(
+  prev: ScheduleState,
+  rating: number,
+  today: string,
+  examDate?: string | null,
+): { intervalDays: number; lapses: number; nextReviewDate: string } {
+  const base = intervalForRating(rating); // throws ValidationError on a bad rating
+
+  let intervalDays: number;
+  let lapses = prev.lapses;
+  if (rating <= 2) {
+    intervalDays = base;
+    lapses += 1;
+  } else {
+    intervalDays = prev.intervalDays // null/0 -> first attempt, use the ladder
+      ? Math.max(base, Math.round(prev.intervalDays * GROWTH_MULTIPLIER[rating]))
+      : base;
+  }
+
+  let cap = MAX_INTERVAL_DAYS;
+  if (examDate && examDate > today) {
+    cap = Math.min(cap, Math.max(1, Math.floor(0.15 * daysBetween(today, examDate))));
+  }
+  intervalDays = Math.min(intervalDays, cap);
+
+  return { intervalDays, lapses, nextReviewDate: addDaysIso(today, intervalDays) };
 }

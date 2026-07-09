@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   LAB_TEMPLATE_SECTIONS,
   type LabTemplate,
@@ -34,13 +34,26 @@ interface TemplateDraft {
 
 export function LabTemplatesPage() {
   const navigate = useNavigate();
+  const [params, setParams] = useSearchParams();
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [templates, setTemplates] = useState<LabTemplateWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [objectiveFilter, setObjectiveFilter] = useState<number | 'all'>('all');
+  // The objective filter lives in the URL (?objective=<id>) so dashboard
+  // deep links land pre-filtered and the filter survives reloads.
+  const objectiveFilter: number | 'all' = useMemo(() => {
+    const raw = params.get('objective');
+    const n = raw ? Number(raw) : NaN;
+    return Number.isInteger(n) && n > 0 ? n : 'all';
+  }, [params]);
+
+  function setObjectiveFilter(next: number | 'all') {
+    if (next === 'all') params.delete('objective');
+    else params.set('objective', String(next));
+    setParams(params, { replace: true });
+  }
 
   useEffect(() => {
     Promise.all([listObjectives(), listTemplates()])

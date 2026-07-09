@@ -40,7 +40,9 @@ export function ObjectivePicker({
   );
 }
 
-function groupByDomain(objectives: Objective[]): [string, Objective[]][] {
+/** Objectives grouped by domain, domains sorted alphabetically. Exported for
+ * other objective <select>s (e.g. the question-browser filter). */
+export function groupByDomain(objectives: Objective[]): [string, Objective[]][] {
   const map = new Map<string, Objective[]>();
   for (const o of objectives) {
     const key = o.domain ?? 'Uncategorized';

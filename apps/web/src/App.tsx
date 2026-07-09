@@ -1,18 +1,25 @@
 import { NavLink, Route, Routes } from 'react-router-dom';
 import { DashboardPage } from './pages/Dashboard';
+import { DrillPage } from './pages/Drill';
+import { ExamRunnerPage } from './pages/ExamRunner';
+import { ExamsPage } from './pages/Exams';
 import { LabRunsPage } from './pages/LabRuns';
 import { LabTemplatesPage } from './pages/LabTemplates';
 import { ObjectivesPage } from './pages/Objectives';
 import { QuestionsPage } from './pages/Questions';
 import { ReviewPage } from './pages/Review';
+import { SettingsPage } from './pages/Settings';
 
 const NAV = [
   { to: '/', label: 'Dashboard', end: true },
   { to: '/objectives', label: 'Objectives' },
   { to: '/questions', label: 'Questions' },
   { to: '/review', label: 'Review' },
+  { to: '/drill', label: 'Drill' },
+  { to: '/exams', label: 'Exams' },
   { to: '/labs', label: 'Labs' },
   { to: '/runs', label: 'Runs' },
+  { to: '/settings', label: 'Settings' },
 ];
 
 export function App() {
@@ -37,8 +44,12 @@ export function App() {
           <Route path="/objectives" element={<ObjectivesPage />} />
           <Route path="/questions" element={<QuestionsPage />} />
           <Route path="/review" element={<ReviewPage />} />
+          <Route path="/drill" element={<DrillPage />} />
+          <Route path="/exams" element={<ExamsPage />} />
+          <Route path="/exams/:id" element={<ExamRunnerPage />} />
           <Route path="/labs" element={<LabTemplatesPage />} />
           <Route path="/runs" element={<LabRunsPage />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </main>
     </div>

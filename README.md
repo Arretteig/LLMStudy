@@ -7,11 +7,11 @@ Not a flashcard app. It's a practical learning/lab system that makes you *explai
 concepts, *run* small experiments, *document* observations, and *revisit* weak
 areas — with everything connected back to the certification blueprint.
 
-> **Status: MVP complete.** All six modules work end-to-end: dashboard, objective
-> tracker, recall questions, spaced review, lab templates, and lab runs. No auth,
-> no cloud — it runs entirely on your machine. LLM grading, RAG, mock exams, and a
-> benchmark logger are designed-for (schema hooks in place) but intentionally not
-> built yet.
+> **Status: exam-prep pipeline complete.** Dashboard, objective tracker, recall
+> questions, spaced review (growing-interval scheduler), MCQ drill, timed mock
+> exams, calibration tracking, labs, and runs all work end-to-end. No auth, no
+> cloud — it runs entirely on your machine. LLM grading, RAG, and a benchmark
+> logger remain designed-for but intentionally not built.
 
 ---
 
@@ -70,25 +70,39 @@ content, so the app is useful immediately.
    and a **domain readiness** table showing the official exam weights.
 2. **Objectives** (`/objectives`) — the certification blueprint. Set confidence
    (1–5) and status, record evidence of understanding.
-3. **Questions** (`/questions`) — your active-recall bank. Read, answer from
-   memory, reveal the expected answer. Linked to objectives.
+3. **Questions** (`/questions`) — the question library: open-ended **recall**
+   cards (feed the spaced Review queue) and **MCQ** items with per-option
+   rationales (feed Drill and Exams). Search, filters, per-card attempt history,
+   and authoring for both formats.
 4. **Review** (`/review`) — the spaced-review queue. One card at a time: answer,
    reveal, self-rate 1–5. Ratings drive the schedule: `1→+1d, 2→+2d, 3→+4d,
-   4→+7d, 5→+14d`. Keyboard-first (`Space` reveal · `1–5` rate · `S` skip ·
-   `U` undo); rating unlocks only after reveal, so retrieval is enforced. Cards
-   rated 1–2 come back later in the same session (relearning); new cards are
-   capped at 15/day so day one isn't a 100-card wall. The end-of-session summary
-   shows a rating histogram, your toughest objectives, and tomorrow's load.
-5. **Labs** (`/labs`) — **lab templates**: reusable guided exercises tied to
+   4→+7d, 5→+14d`, then intervals **grow** on repeated success (×1.2/×2.0/×2.5,
+   capped at 60 days or ~15% of days-to-exam once a date is set) and reset on a
+   lapse. Keyboard-first (`Space` reveal · `1–3` confidence before reveal ·
+   `1–5` rate after · `S` skip · `U` undo); rating unlocks only after reveal, so
+   retrieval is enforced. Cards rated 1–2 come back later in the same session
+   (relearning); new cards are capped per day (default 15, a setting). The
+   session summary shows a rating histogram, toughest objectives, and tomorrow's
+   load. Recall cards only — MCQs deliberately never enter this queue.
+5. **Drill** (`/drill`) — untimed MCQ practice by domain/objective with
+   immediate, per-option rationale feedback; misses can be turned into recall
+   cards (error-log workflow) that enter the spaced queue.
+6. **Exams** (`/exams`) — timed, weight-proportional mock exams (predict your
+   score first — calibration training), a question navigator with flagging,
+   per-domain score reports with full rationale review, and a readiness estimate
+   (median of your last two mocks ± noise band). Exam answers never touch the
+   review schedule.
+7. **Labs** (`/labs`) — **lab templates**: reusable guided exercises tied to
    objectives (goal, steps, success criteria, reflection questions). Filter by
    objective and **start a run**.
-6. **Runs** (`/runs`) — your actual attempts: write a hypothesis *before* you
+8. **Runs** (`/runs`) — your actual attempts: write a hypothesis *before* you
    start, record commands/results, explain *why*, rate confidence after, and
    **spin recall questions out of your mistakes**.
 
-The loop: open the dashboard → pick a weak objective → start a lab run from a
-template → hypothesize, do the work, record and explain it → rate your confidence
-→ turn confusions into recall questions → review them on schedule.
+The loop: dashboard → pick a weak objective (ranked by real recall accuracy ×
+exam weight) → learn via labs and recall review → drill MCQs as mastery grows →
+turn every miss into a recall card → when the readiness signal turns on, take
+timed mocks and schedule the real exam.
 
 ## Data model
 
@@ -98,8 +112,12 @@ blobs in the MVP.
 | Table              | Purpose                                                        |
 | ------------------ | ------------------------------------------------------------- |
 | `objectives`       | Blueprint tracker (confidence, status, evidence, review dates) |
-| `recall_questions` | Active-recall bank + denormalized SRS cache                    |
-| `answer_attempts`  | Immutable review history (drives progress/accuracy)           |
+| `recall_questions` | Question bank (recall + MCQ) + denormalized SRS cache          |
+| `question_choices` | MCQ options with per-option rationales                         |
+| `answer_attempts`  | Immutable attempt history (review / drill / exam sources)      |
+| `exam_sessions`, `exam_items` | Timed mock exams and their graded items             |
+| `domains`          | Official cert domains + exam weights                           |
+| `app_settings`     | Key-value settings (exam date, new-cards/day)                  |
 | `lab_templates`    | Reusable guided exercises                                      |
 | `lab_runs`         | My attempts at labs (status, hypothesis → result → why)        |
 | `tags`, `template_tags` | Normalized tag dictionary + junction                     |
@@ -109,8 +127,8 @@ template links use `SET NULL` so deleting one never destroys your history.
 
 ## Seed data
 
-`db/seed/nca-genl.json` ships **25 objectives, 100 recall questions, and 5 lab
-templates** across the five official NCA-GENL domains and their exam weights. The
+`db/seed/nca-genl.json` ships **25 objectives, 100 recall questions, 10 MCQ items
+(with per-option rationales), and 5 lab templates** across the five official NCA-GENL domains and their exam weights. The
 questions span multiple styles (recall, compare, when-to-use, scenario,
 troubleshooting, best-choice) and were drafted from research into the exam's
 question patterns, then adversarially reviewed for correctness.
@@ -181,7 +199,6 @@ The schema and the `/api` seam are set up so these can be added without a rewrit
 
 - **RAG study assistant** — strict, cited answers over approved material + your notes.
 - **LLM answer grading** — compare a recall answer to a rubric for feedback.
-- **Mock exam mode** — timed practice exams with missed-question review.
 - **Inference benchmark logger** — track local vLLM runs (model, context length,
   latency, tokens/sec, VRAM, failure modes).
 - **Troubleshooting scenario simulator** — diagnose latency, context, RAG

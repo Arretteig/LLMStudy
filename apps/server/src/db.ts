@@ -48,6 +48,38 @@ export const MIGRATIONS: Migration[] = [
   // INSERT OR IGNORE actually skip duplicate unlinked questions.
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_questions_unlinked_text
      ON recall_questions(question_text) WHERE objective_id IS NULL;`,
+
+  // 2-4: growing-ladder scheduler (F11). Each question caches its current
+  // interval (grows on success, resets on a lapse) and a lapse counter; each
+  // attempt records the interval it produced so undo can replay history.
+  `ALTER TABLE recall_questions ADD COLUMN interval_days INTEGER;`,
+  `ALTER TABLE recall_questions ADD COLUMN lapses INTEGER NOT NULL DEFAULT 0;`,
+  `ALTER TABLE answer_attempts ADD COLUMN interval_days INTEGER;`,
+
+  // 5: single-user key-value settings (F12) — exam_date, new_cards_per_day.
+  `CREATE TABLE IF NOT EXISTS app_settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT (datetime('now')));`,
+
+  // 6: official cert domains + exam weights (F16). Populated by seed.ts from
+  // the seed JSON's _domain_weights (INSERT OR IGNORE keeps re-seeds no-ops).
+  `CREATE TABLE IF NOT EXISTS domains (cert_path TEXT NOT NULL, name TEXT NOT NULL, weight INTEGER NOT NULL, PRIMARY KEY (cert_path, name));`,
+
+  // 7: pre-reveal confidence on attempts (F18): 1 guessing, 2 probably, 3 sure.
+  `ALTER TABLE answer_attempts ADD COLUMN confidence INTEGER CHECK (confidence BETWEEN 1 AND 3);`,
+
+  // 8-9: MCQ items (F21). 'recall' cards keep living in the spaced Review
+  // queue; 'mcq' items are served by Drill/Mock exams and NEVER enter the SRS.
+  `ALTER TABLE recall_questions ADD COLUMN question_format TEXT NOT NULL DEFAULT 'recall' CHECK (question_format IN ('recall','mcq'));`,
+  `CREATE TABLE IF NOT EXISTS question_choices (id INTEGER PRIMARY KEY, question_id INTEGER NOT NULL REFERENCES recall_questions(id) ON DELETE CASCADE, position INTEGER NOT NULL, choice_text TEXT NOT NULL, is_correct INTEGER NOT NULL DEFAULT 0, rationale TEXT, UNIQUE (question_id, position));`,
+
+  // 10-12: attempt provenance (F22/F23). Only source='review' attempts drive
+  // the SRS; drill/exam attempts are history-only (next_review_date NULL).
+  `ALTER TABLE answer_attempts ADD COLUMN source TEXT NOT NULL DEFAULT 'review' CHECK (source IN ('review','drill','exam'));`,
+  `ALTER TABLE answer_attempts ADD COLUMN session_id INTEGER;`,
+  `ALTER TABLE answer_attempts ADD COLUMN selected_choice_ids TEXT;`, // JSON int array
+
+  // 13-14: mock exams (F23) — a session plus its per-question item snapshot.
+  `CREATE TABLE IF NOT EXISTS exam_sessions (id INTEGER PRIMARY KEY, started_at TEXT NOT NULL, completed_at TEXT, question_count INTEGER NOT NULL, duration_minutes INTEGER NOT NULL, predicted_score INTEGER CHECK (predicted_score BETWEEN 0 AND 100), score_percent REAL, created_at TEXT NOT NULL DEFAULT (datetime('now')));`,
+  `CREATE TABLE IF NOT EXISTS exam_items (id INTEGER PRIMARY KEY, session_id INTEGER NOT NULL REFERENCES exam_sessions(id) ON DELETE CASCADE, question_id INTEGER NOT NULL REFERENCES recall_questions(id), position INTEGER NOT NULL, flagged INTEGER NOT NULL DEFAULT 0, selected_choice_ids TEXT, is_correct INTEGER, time_spent_ms INTEGER, UNIQUE (session_id, position));`,
 ];
 
 /** Run every migration the database has not seen yet, each in its own transaction. */

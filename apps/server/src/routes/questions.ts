@@ -4,6 +4,7 @@ import { NotFoundError, ValidationError } from '../errors';
 import {
   createQuestion,
   deleteQuestion,
+  getChoices,
   getQuestion,
   listQuestions,
   updateQuestion,
@@ -27,6 +28,16 @@ questionsRouter.get('/:id', (req, res) => {
   const question = getQuestion(getDb(), Number(req.params.id));
   if (!question) throw new NotFoundError('question not found');
   res.json(question);
+});
+
+// GET /api/questions/:id/choices -> full choice set (is_correct + rationale),
+// position order. This is the AUTHORING view — practice endpoints (drill/exam)
+// serve choices without the answers.
+questionsRouter.get('/:id/choices', (req, res) => {
+  const db = getDb();
+  const id = Number(req.params.id);
+  if (!getQuestion(db, id)) throw new NotFoundError('question not found');
+  res.json(getChoices(db, id));
 });
 
 // POST /api/questions

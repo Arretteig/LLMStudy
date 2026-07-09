@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { REVIEW_RATINGS, type DueItem } from '@llmstudy/shared';
 import {
   deleteAttempt,
@@ -10,6 +11,13 @@ import {
 /** A due item queued for this session (may be a same-session relearn copy). */
 type QueueItem = DueItem & { relearn?: boolean };
 
+/** Pre-reveal confidence levels — keys 1-3 select these before the answer shows. */
+const CONFIDENCE_LEVELS = [
+  { value: 1, label: 'Guessing' },
+  { value: 2, label: 'Probably' },
+  { value: 3, label: 'Sure' },
+] as const;
+
 interface LastSubmission {
   attemptId: number;
   item: QueueItem;
@@ -19,6 +27,14 @@ interface LastSubmission {
 }
 
 export function ReviewPage() {
+  // Optional scope from the URL (dashboard deep links): one objective or domain.
+  const [searchParams] = useSearchParams();
+  const objectiveParam = searchParams.get('objective');
+  const domainParam = searchParams.get('domain');
+  const objectiveId =
+    objectiveParam && /^\d+$/.test(objectiveParam) ? Number(objectiveParam) : null;
+  const scoped = objectiveId != null || !!domainParam;
+
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [index, setIndex] = useState(0);
   const [reviewed, setReviewed] = useState(0);
@@ -39,7 +55,13 @@ export function ReviewPage() {
   function load() {
     setLoading(true);
     setError(null);
-    listDue()
+    listDue(
+      objectiveId != null
+        ? { objective_id: objectiveId }
+        : domainParam
+          ? { domain: domainParam }
+          : undefined,
+    )
       .then((items) => {
         setQueue(items);
         setIndex(0);
@@ -54,18 +76,30 @@ export function ReviewPage() {
       .finally(() => setLoading(false));
   }
 
-  useEffect(load, []);
+  // Reload whenever the scope changes (including clearing it).
+  useEffect(load, [objectiveParam, domainParam]);
 
   const current = queue[index];
   const total = queue.length;
+  // Scope label: cards carry objective_title, so borrow the first card's;
+  // fall back to the raw param when the scoped queue is empty.
+  const scopeLabel =
+    objectiveId != null
+      ? queue[0]?.objective_title ?? `objective #${objectiveId}`
+      : domainParam;
 
-  async function gradeCurrent(rating: number, userAnswer: string) {
+  async function gradeCurrent(
+    rating: number,
+    userAnswer: string,
+    confidence: number | null,
+  ) {
     if (!current) return;
     try {
       const attempt = await submitReview({
         question_id: current.id,
         rating,
         user_answer: userAnswer || null,
+        confidence,
       });
       const requeue = rating <= 2;
       if (requeue) {
@@ -167,6 +201,15 @@ export function ReviewPage() {
         </div>
       )}
 
+      {scoped && (
+        <div className="scope-chip">
+          Scoped: <strong>{scopeLabel}</strong>
+          <Link className="scope-clear" to="/review" title="Back to the full queue">
+            ✕ clear
+          </Link>
+        </div>
+      )}
+
       {total === 0 ? (
         <EmptyState onRefresh={load} />
       ) : current ? (
@@ -224,13 +267,19 @@ function ReviewCard({
   canUndo,
 }: {
   item: QueueItem;
-  onGrade: (rating: number, userAnswer: string) => Promise<void>;
+  onGrade: (
+    rating: number,
+    userAnswer: string,
+    confidence: number | null,
+  ) => Promise<void>;
   onSkip: () => void;
   onUndo: () => void;
   canUndo: boolean;
 }) {
   const [answer, setAnswer] = useState('');
   const [revealed, setRevealed] = useState(false);
+  // Pre-reveal confidence (1-3); resets per card since cards remount via key.
+  const [confidence, setConfidence] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const answerRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -249,7 +298,7 @@ function ReviewCard({
   async function grade(rating: number) {
     setSubmitting(true);
     try {
-      await onGrade(rating, answer.trim());
+      await onGrade(rating, answer.trim(), confidence);
     } finally {
       // On success the component unmounts (keyed by id + position) and this
       // is a no-op; on failure it re-enables the buttons for a retry.
@@ -287,6 +336,11 @@ function ReviewCard({
       } else if (e.key >= '1' && e.key <= '5' && ratingActive && !submitting) {
         e.preventDefault();
         void grade(Number(e.key));
+      } else if (e.key >= '1' && e.key <= '3' && !ratingActive) {
+        // Pre-reveal: digits pick confidence (same digit again clears it).
+        e.preventDefault();
+        const level = Number(e.key);
+        setConfidence((c) => (c === level ? null : level));
       } else if ((e.key === 's' || e.key === 'S') && !submitting) {
         e.preventDefault();
         onSkip();
@@ -338,9 +392,29 @@ function ReviewCard({
             {item.expected_answer}
           </div>
         ) : (
-          <button className="btn" onClick={reveal}>
-            Show expected answer
-          </button>
+          <>
+            <div className="conf-row">
+              <span className="conf-label">How sure are you?</span>
+              <div className="conf-chips">
+                {CONFIDENCE_LEVELS.map((c) => (
+                  <button
+                    key={c.value}
+                    type="button"
+                    className={`conf-chip ${confidence === c.value ? 'selected' : ''}`}
+                    onClick={() =>
+                      setConfidence((prev) => (prev === c.value ? null : c.value))
+                    }
+                    title="Optional — noted with your attempt for calibration"
+                  >
+                    <kbd>{c.value}</kbd> {c.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <button className="btn" onClick={reveal}>
+              Show expected answer
+            </button>
+          </>
         ))}
       {!item.expected_answer && (
         <span className="muted small-text">No expected answer recorded.</span>
@@ -375,9 +449,18 @@ function ReviewCard({
           Skip for now
         </button>
         <div className="kbd-hints muted">
-          <kbd>Ctrl</kbd>+<kbd>Enter</kbd> / <kbd>Space</kbd> — reveal ·{' '}
-          <kbd>1</kbd>–<kbd>5</kbd> — rate · <kbd>S</kbd> — skip ·{' '}
-          <kbd>U</kbd> — undo
+          {ratingActive ? (
+            <>
+              <kbd>1</kbd>–<kbd>5</kbd> — rate · <kbd>S</kbd> — skip ·{' '}
+              <kbd>U</kbd> — undo
+            </>
+          ) : (
+            <>
+              <kbd>1</kbd>–<kbd>3</kbd> — confidence ·{' '}
+              <kbd>Ctrl</kbd>+<kbd>Enter</kbd> / <kbd>Space</kbd> — reveal ·{' '}
+              <kbd>S</kbd> — skip
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -825,5 +825,287 @@
         "retrieval"
       ]
     }
+  ],
+  "mcqQuestions": [
+    {
+      "objective_title": "Transformer architecture fundamentals",
+      "question_text": "An engineer implementing scaled dot-product attention from scratch notices the formula divides the QK^T score matrix by sqrt(d_k) before applying softmax. What is the primary purpose of this scaling step?",
+      "difficulty": 2,
+      "choices": [
+        {
+          "choice_text": "It prevents large dot-product scores from saturating the softmax into near-one-hot weights, shrinking gradients.",
+          "is_correct": true,
+          "rationale": "Correct. For high-dimensional queries and keys, the variance of the dot products grows with d_k, pushing softmax into extreme regions where outputs are near-one-hot and gradients become very small; dividing by sqrt(d_k) keeps score variance near 1 so attention stays trainable."
+        },
+        {
+          "choice_text": "It normalizes the token embeddings to unit length so queries and keys are compared on a consistent geometric scale.",
+          "is_correct": false,
+          "rationale": "Incorrect. This confuses score scaling with vector normalization (e.g., LayerNorm or L2 normalization); dividing scores by sqrt(d_k) rescales the scalar dot products, not the embedding or projection vectors themselves."
+        },
+        {
+          "choice_text": "It reduces the memory footprint of the attention score matrix during the forward and backward passes.",
+          "is_correct": false,
+          "rationale": "Incorrect. This reflects a misconception that scaling is an efficiency optimization; the score matrix stays the same n x n shape and dtype regardless of scaling, so memory usage is unchanged (memory savings come from techniques like FlashAttention, not the sqrt(d_k) divisor)."
+        },
+        {
+          "choice_text": "It applies the causal constraint that prevents each token from attending to later positions in the sequence.",
+          "is_correct": false,
+          "rationale": "Incorrect. This confuses scaling with masking; causality is enforced by adding negative infinity to (or masking out) future-position scores before softmax, a separate operation from dividing by sqrt(d_k)."
+        }
+      ]
+    },
+    {
+      "objective_title": "Model architecture families",
+      "question_text": "A team is building semantic search over support tickets: each document must be mapped to a dense embedding that represents its full meaning. Which Transformer architecture is the most appropriate choice for producing these embeddings, and why?",
+      "difficulty": 2,
+      "choices": [
+        {
+          "choice_text": "An encoder-only model such as BERT, because bidirectional self-attention lets every token attend to context on both its left and right.",
+          "is_correct": true,
+          "rationale": "Correct. BERT's encoder stack uses unmasked (bidirectional) self-attention, so each token's representation integrates the full surrounding context — exactly what is needed to produce dense sentence/document embeddings for semantic search and classification."
+        },
+        {
+          "choice_text": "A decoder-only model such as GPT, because its causal self-attention also captures bidirectional context during pre-training.",
+          "is_correct": false,
+          "rationale": "Incorrect. This reflects the misconception that autoregressive pre-training somehow yields bidirectional context; causal masking restricts each token to attending only to earlier (left) tokens, so a vanilla decoder-only model builds unidirectional representations."
+        },
+        {
+          "choice_text": "An encoder-decoder model such as T5, because the decoder stack is required to compress the input into a fixed-size embedding vector.",
+          "is_correct": false,
+          "rationale": "Incorrect. This is the misconception that the decoder produces the representation; in encoder-decoder models the encoder builds the input representations while the decoder autoregressively generates output tokens, so the decoder adds nothing for a pure embedding task."
+        },
+        {
+          "choice_text": "A decoder-only model such as GPT, because larger autoregressive models always yield stronger embeddings than bidirectional encoders.",
+          "is_correct": false,
+          "rationale": "Incorrect. This is the 'scale beats architecture fit' misconception: generative capability and parameter count do not substitute for bidirectional context, and encoder-only models remain the standard, cost-effective choice for embedding and classification tasks."
+        }
+      ]
+    },
+    {
+      "objective_title": "Pre-training, inference, and scaling laws",
+      "question_text": "During regression testing, an engineer sends the same prompt to an LLM repeatedly and needs the generated output to be identical on every run. Which two decoding-parameter changes make the output more deterministic? (Choose two.)",
+      "difficulty": 2,
+      "choices": [
+        {
+          "choice_text": "Set the temperature to 0 so decoding becomes greedy",
+          "is_correct": true,
+          "rationale": "Temperature 0 collapses sampling to greedy (argmax) decoding: the single highest-probability token is always chosen, so the same prompt yields the same output every run."
+        },
+        {
+          "choice_text": "Fix the random seed used by the sampling procedure",
+          "is_correct": true,
+          "rationale": "A fixed seed makes the pseudo-random draws in sampling repeatable, so the same prompt with the same settings reproduces the identical token sequence across runs."
+        },
+        {
+          "choice_text": "Raise the temperature to 1.5 to sharpen the token distribution",
+          "is_correct": false,
+          "rationale": "This reverses the effect of temperature: values above 1 flatten the softmax distribution, spreading probability across more tokens and increasing randomness, not sharpening it."
+        },
+        {
+          "choice_text": "Increase top-p from 0.9 to 1.0 to tighten the nucleus of tokens",
+          "is_correct": false,
+          "rationale": "This misreads nucleus sampling: a higher top-p enlarges the candidate pool (top-p of 1.0 allows the full vocabulary), which increases output variety rather than constraining it."
+        },
+        {
+          "choice_text": "Increase top-k from 10 to 100 so more candidates are considered",
+          "is_correct": false,
+          "rationale": "Considering more candidates does not add consistency; a larger top-k widens the set of tokens that can be sampled, making generations more varied and less reproducible."
+        }
+      ]
+    },
+    {
+      "objective_title": "NVIDIA generative-AI ecosystem",
+      "question_text": "An MLOps team must serve several models in production — a PyTorch classifier, an ONNX embedding model, and an LLM — behind one endpoint with dynamic batching and concurrent model execution on shared GPUs. Which NVIDIA tool is purpose-built for this serving role?",
+      "difficulty": 2,
+      "choices": [
+        {
+          "choice_text": "Triton Inference Server",
+          "is_correct": true,
+          "rationale": "Triton is NVIDIA's production inference server: it hosts many models from different frameworks (PyTorch, ONNX, TensorRT) simultaneously and provides dynamic batching and concurrent model execution on shared GPUs — exactly the multi-model serving role described."
+        },
+        {
+          "choice_text": "TensorRT-LLM",
+          "is_correct": false,
+          "rationale": "TensorRT-LLM is an engine-optimization library that compiles LLMs into fast GPU runtimes (kernel fusion, quantization, in-flight batching); it is not a multi-framework serving layer. The misconception is conflating optimizing one model's engine with hosting many models — in practice TensorRT-LLM engines are typically served as a backend inside Triton."
+        },
+        {
+          "choice_text": "NeMo Framework",
+          "is_correct": false,
+          "rationale": "NeMo is NVIDIA's framework for training, fine-tuning, and customizing generative AI models, not for production serving. The misconception is assuming the tool used to build or adapt a model also deploys it at scale."
+        },
+        {
+          "choice_text": "NVIDIA NIM microservices",
+          "is_correct": false,
+          "rationale": "NIM packages a single pre-optimized model (with Triton and TensorRT under the hood) as a ready-to-run API container; it is not a general server you configure to host your own arbitrary PyTorch and ONNX models together. The misconception is treating the packaged-microservice product as the underlying multi-model inference server."
+        }
+      ]
+    },
+    {
+      "objective_title": "Inference optimization and serving",
+      "question_text": "An engineer serving a 7B-parameter LLM with TensorRT-LLM hits out-of-memory errors at her target batch size. She applies post-training INT8 quantization to the model. What primary effect should she expect from this change?",
+      "difficulty": 2,
+      "choices": [
+        {
+          "choice_text": "Lower memory use and higher inference throughput, at the cost of a small possible accuracy drop.",
+          "is_correct": true,
+          "rationale": "Correct. INT8 stores weights (and often activations) in 8 bits instead of 16 or 32, roughly halving or quartering memory and enabling faster integer math on GPU tensor cores; the compression can slightly degrade output quality, which is the classic quantization trade-off."
+        },
+        {
+          "choice_text": "Improved model accuracy, because lower-precision arithmetic acts as a form of regularization.",
+          "is_correct": false,
+          "rationale": "This reflects the misconception that quantization improves accuracy like a regularizer. Quantization is applied after training to compress the model; the reduced numeric precision can only preserve or slightly reduce accuracy, not systematically raise it."
+        },
+        {
+          "choice_text": "Guaranteed GPU compatibility, because GPUs can only execute models with integer-precision weights.",
+          "is_correct": false,
+          "rationale": "This is the misconception that quantization is required for GPU inference. GPUs natively execute FP32, FP16, and BF16 models; INT8 is an optional optimization for speed and memory, not a compatibility requirement."
+        },
+        {
+          "choice_text": "A larger maximum context window, because smaller weights leave more room for input tokens.",
+          "is_correct": false,
+          "rationale": "This confuses freed GPU memory with the model's context length. The maximum context window is fixed by the model's architecture and training (e.g., positional encoding scheme); quantizing weights frees memory for larger batches or KV cache but does not extend the supported context length."
+        }
+      ]
+    },
+    {
+      "objective_title": "LLM integration and agentic workflows",
+      "question_text": "A developer is building a retrieval-augmented generation (RAG) chatbot that answers questions over internal PDF manuals using a vector database. Which sequence correctly orders the pipeline from document ingestion to answering a user query?",
+      "difficulty": 2,
+      "choices": [
+        {
+          "choice_text": "Chunk documents -> embed chunks -> store vectors in the database -> retrieve top-k chunks for the query -> augment the prompt -> generate the answer",
+          "is_correct": true,
+          "rationale": "Correct. Indexing (chunk, embed, store) happens offline before any query; at query time the top-k relevant chunks are retrieved, injected into the prompt as context, and only then does the LLM generate. This ingest -> embed -> store -> retrieve -> augment -> generate order is the defining structure of RAG."
+        },
+        {
+          "choice_text": "Embed full documents -> chunk the resulting vectors -> store them in the database -> retrieve top-k for the query -> augment the prompt -> generate the answer",
+          "is_correct": false,
+          "rationale": "Wrong because it reverses chunking and embedding. Embeddings are fixed-length vectors that cannot be meaningfully split afterward; text must be chunked first so each chunk receives its own embedding, enabling fine-grained similarity retrieval. This reflects the misconception that embedding is applied to whole documents before splitting."
+        },
+        {
+          "choice_text": "Chunk documents -> store raw chunks in the database -> retrieve top-k for the query -> embed the retrieved chunks -> augment the prompt -> generate the answer",
+          "is_correct": false,
+          "rationale": "Wrong because it defers embedding until after retrieval. A vector database performs top-k similarity search over precomputed chunk embeddings, so vectors must exist at indexing time; storing raw text alone makes semantic retrieval impossible. This reflects the misconception that embedding is a query-time step applied to results."
+        },
+        {
+          "choice_text": "Chunk documents -> embed chunks -> store vectors in the database -> generate a draft answer -> retrieve top-k chunks -> append them as citations",
+          "is_correct": false,
+          "rationale": "Wrong because it places generation before retrieval. In RAG, retrieved context must augment the prompt before the LLM generates so the answer is grounded in the documents; retrieving afterward to attach citations does not prevent hallucination. This reflects the misconception that retrieval is a post-hoc fact-checking or citation step."
+        }
+      ]
+    },
+    {
+      "objective_title": "Evaluation metrics for LLMs",
+      "question_text": "A team fine-tunes an LLM for news summarization and holds out a test set of human-written reference summaries. They need an automated metric that scores how much of each reference summary's content the generated summaries recover. Which metric should they use?",
+      "difficulty": 2,
+      "choices": [
+        {
+          "choice_text": "ROUGE",
+          "is_correct": true,
+          "rationale": "ROUGE is the standard summarization metric: it computes recall-oriented n-gram and longest-common-subsequence overlap against reference summaries, directly rewarding outputs that recover the reference's content."
+        },
+        {
+          "choice_text": "BLEU",
+          "is_correct": false,
+          "rationale": "Misconception: any n-gram overlap metric fits any generation task. BLEU is precision-oriented and was designed for machine translation — it penalizes n-grams absent from the reference rather than measuring how much reference content is recovered."
+        },
+        {
+          "choice_text": "Perplexity",
+          "is_correct": false,
+          "rationale": "Misconception: lower perplexity means better outputs. Perplexity is an intrinsic measure of how well the language model fits held-out text; it requires no references and never compares a generated summary to one, so it cannot score content coverage."
+        },
+        {
+          "choice_text": "Accuracy",
+          "is_correct": false,
+          "rationale": "Misconception: treating generation as classification. Accuracy needs a single discrete correct label per example, so it cannot grade free-form summaries where many differently worded outputs are equally valid."
+        }
+      ]
+    },
+    {
+      "objective_title": "Fine-tuning and parameter-efficient adaptation",
+      "question_text": "A team must adapt a 7B-parameter foundation model to a specialized domain using 5,000 labeled examples. Prompt-based approaches have already proven insufficient, only one 24GB GPU is available, and the model's general capabilities must be preserved. Which adaptation strategy best fits these constraints?",
+      "difficulty": 2,
+      "choices": [
+        {
+          "choice_text": "Apply LoRA, training small low-rank adapter matrices while keeping the base weights frozen",
+          "is_correct": true,
+          "rationale": "LoRA updates only a tiny fraction of parameters, so gradients and optimizer states fit a 7B model on a single 24GB GPU. It works well with small datasets, and freezing the base weights preserves general capabilities and avoids catastrophic forgetting."
+        },
+        {
+          "choice_text": "Perform full fine-tuning of every model parameter to maximize quality on the new domain",
+          "is_correct": false,
+          "rationale": "This reflects the misconception that full fine-tuning is always better. Full fine-tuning of a 7B model needs far more than 24GB for gradients and optimizer states, and updating all weights on only 5,000 examples invites overfitting and catastrophic forgetting of general capabilities."
+        },
+        {
+          "choice_text": "Pre-train a new domain-specific model from scratch so it is fully specialized",
+          "is_correct": false,
+          "rationale": "This is the misconception that specialization requires starting over. Pre-training needs billions of tokens and large-scale compute; 5,000 examples is orders of magnitude too little, and it throws away the knowledge the foundation model already provides."
+        },
+        {
+          "choice_text": "Use prompt engineering alone, since well-crafted prompts can replace weight updates",
+          "is_correct": false,
+          "rationale": "This is the misconception that prompting substitutes for adaptation in all cases. The scenario states prompt-based approaches already failed, so the required behavior must be encoded in the weights, which prompt-only methods cannot do."
+        }
+      ]
+    },
+    {
+      "objective_title": "Tokenization and embeddings",
+      "question_text": "A biomedical NLP team worries their LLM will encounter rare drug names never seen during training. Why does a subword tokenizer such as BPE represent these words effectively while keeping the vocabulary size bounded?",
+      "difficulty": 2,
+      "choices": [
+        {
+          "choice_text": "It decomposes unseen words into smaller known subword units, so any word is representable with a fixed vocabulary.",
+          "is_correct": true,
+          "rationale": "Correct. BPE builds a fixed inventory of frequent subword merges; any novel word (e.g., a rare drug name) is split into existing subword pieces, eliminating out-of-vocabulary failures without growing the vocabulary."
+        },
+        {
+          "choice_text": "It maps every word that is missing from the vocabulary to a single shared [UNK] token the model can process.",
+          "is_correct": false,
+          "rationale": "Wrong. Collapsing unknown words to [UNK] is the word-level tokenization fallback that subword methods were designed to avoid, since it discards all information about the rare word."
+        },
+        {
+          "choice_text": "It splits all input text into individual characters, which guarantees full coverage of any possible word.",
+          "is_correct": false,
+          "rationale": "Wrong. This describes character-level tokenization, which does guarantee coverage but produces very long sequences; subword tokenizers only fall back toward characters for rare strings while keeping common words compact."
+        },
+        {
+          "choice_text": "It appends new tokens to the vocabulary at inference time whenever an unseen word appears in the input.",
+          "is_correct": false,
+          "rationale": "Wrong. The tokenizer vocabulary is frozen after training because the model's embedding matrix is sized to it; tokens cannot be added dynamically at inference, which is a common misconception about how OOV handling works."
+        }
+      ]
+    },
+    {
+      "objective_title": "Content filtering and hallucination mitigation",
+      "question_text": "An enterprise chatbot answers employee questions about private internal policy documents but frequently invents plausible-sounding details that are not in those documents. Which two changes would most effectively reduce these hallucinations? (Choose two.)",
+      "difficulty": 2,
+      "choices": [
+        {
+          "choice_text": "Ground each response with retrieval-augmented generation over the internal document corpus.",
+          "is_correct": true,
+          "rationale": "RAG retrieves the relevant internal passages at query time and conditions generation on them, so answers are grounded in the actual documents rather than the model's parametric guesses — the primary mitigation for hallucinations about private knowledge the model never saw."
+        },
+        {
+          "choice_text": "Add a fact-checking guardrail that abstains when an answer lacks support in retrieved sources.",
+          "is_correct": true,
+          "rationale": "A guardrail (e.g., a NeMo Guardrails fact-checking rail) verifies claims against the retrieved evidence and forces citation or abstention when unsupported, catching residual hallucinations that slip past retrieval."
+        },
+        {
+          "choice_text": "Raise the sampling temperature so the model explores a broader and more diverse range of completions.",
+          "is_correct": false,
+          "rationale": "Misconception that more exploration finds better answers: higher temperature increases randomness in token sampling, making fabricated details more likely, not less. Lowering temperature is the direction that reduces hallucination."
+        },
+        {
+          "choice_text": "Continue pre-training the model for additional epochs on general web-crawl data.",
+          "is_correct": false,
+          "rationale": "Misconception that more training data always improves factuality: general web data contains none of the private internal documents, so extra epochs add no grounding for these questions and cannot stop fabrication about the internal corpus."
+        },
+        {
+          "choice_text": "Increase the maximum output token limit so answers can be more complete.",
+          "is_correct": false,
+          "rationale": "Misconception that hallucination stems from truncated answers: max output length only controls when generation stops. Longer outputs give the model more room to fabricate, not more factual grounding."
+        }
+      ]
+    }
   ]
 }

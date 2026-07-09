@@ -1,13 +1,34 @@
 import { Router } from 'express';
 import { getDb } from '../db';
 import { ValidationError } from '../errors';
-import { forecast, listDue, listHistory, recordAttempt, undoAttempt } from '../reviews.repo';
+import {
+  type DueFilter,
+  forecast,
+  listDue,
+  listHistory,
+  recordAttempt,
+  undoAttempt,
+} from '../reviews.repo';
 
 export const reviewsRouter = Router();
 
-// GET /api/reviews/due -> questions due today or overdue (plus capped new questions)
-reviewsRouter.get('/due', (_req, res) => {
-  res.json(listDue(getDb()));
+// GET /api/reviews/due                    -> full queue (reviews + capped new)
+// GET /api/reviews/due?objective_id=3     -> scoped to one objective
+// GET /api/reviews/due?domain=Deployment  -> scoped to one domain (objective_id wins)
+reviewsRouter.get('/due', (req, res) => {
+  const filter: DueFilter = {};
+  const rawObjective = req.query.objective_id;
+  if (typeof rawObjective === 'string' && rawObjective !== '') {
+    const objectiveId = Number(rawObjective);
+    if (!Number.isInteger(objectiveId)) {
+      throw new ValidationError('objective_id must be an integer');
+    }
+    filter.objectiveId = objectiveId;
+  }
+  if (typeof req.query.domain === 'string' && req.query.domain !== '') {
+    filter.domain = req.query.domain;
+  }
+  res.json(listDue(getDb(), undefined, filter));
 });
 
 // GET /api/reviews/forecast?days=N -> upcoming review load, one entry per day
@@ -23,7 +44,7 @@ reviewsRouter.get('/history/:questionId', (req, res) => {
   res.json(listHistory(getDb(), Number(req.params.questionId)));
 });
 
-// POST /api/reviews -> record an attempt { question_id, rating, user_answer? }
+// POST /api/reviews -> record an attempt { question_id, rating, user_answer?, confidence? }
 reviewsRouter.post('/', (req, res) => {
   const body = req.body ?? {};
   const questionId = Number(body.question_id);
@@ -34,6 +55,7 @@ reviewsRouter.post('/', (req, res) => {
     question_id: questionId,
     rating: Number(body.rating),
     user_answer: typeof body.user_answer === 'string' ? body.user_answer : null,
+    confidence: body.confidence ?? null, // repo validates 1..3 or null
   });
   res.status(201).json(attempt);
 });

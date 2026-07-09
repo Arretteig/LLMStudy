@@ -1,6 +1,6 @@
 import { createApp } from './app';
 import { getDb } from './db';
-import { seed } from './seed';
+import { seed, seedDomainsIfEmpty } from './seed';
 
 const PORT = Number(process.env.PORT ?? 3001);
 
@@ -19,6 +19,10 @@ if (n === 0) {
       `${result.questions} questions, ${result.labTemplates} lab templates`,
   );
 }
+
+// Databases from before M3 have an empty domains table (migrations create it,
+// but only brand-new databases get the full seed) — heal it on every boot.
+seedDomainsIfEmpty(db);
 
 createApp().listen(PORT, () => {
   console.log(`LLMStudy API listening on http://localhost:${PORT}`);

@@ -6,11 +6,15 @@ import express, {
 } from 'express';
 import { ConflictError, NotFoundError, ValidationError } from './errors';
 import { dashboardRouter } from './routes/dashboard';
+import { domainsRouter } from './routes/domains';
+import { drillRouter } from './routes/drill';
+import { examsRouter } from './routes/exams';
 import { labRunsRouter } from './routes/lab-runs';
 import { labTemplatesRouter } from './routes/lab-templates';
 import { objectivesRouter } from './routes/objectives';
 import { questionsRouter } from './routes/questions';
 import { reviewsRouter } from './routes/reviews';
+import { settingsRouter } from './routes/settings';
 
 /** Build the Express app with all routes mounted. No DB or network side effects. */
 export function createApp(): Express {
@@ -21,9 +25,13 @@ export function createApp(): Express {
   app.use('/api/objectives', objectivesRouter);
   app.use('/api/questions', questionsRouter);
   app.use('/api/reviews', reviewsRouter);
+  app.use('/api/drill', drillRouter);
+  app.use('/api/exams', examsRouter);
   app.use('/api/lab-templates', labTemplatesRouter);
   app.use('/api/lab-runs', labRunsRouter);
   app.use('/api/dashboard', dashboardRouter);
+  app.use('/api/domains', domainsRouter);
+  app.use('/api/settings', settingsRouter);
 
   // Unknown /api/* paths get a JSON 404 instead of Express's HTML default.
   app.use('/api', (_req, res) => res.status(404).json({ error: 'not found' }));

@@ -131,21 +131,21 @@ Full feature specs, dependency graph, and effort estimates: [research/featureGap
 - **F7 New-card cap (~15/day) + domain interleaving** (kills the 100-card day-one wall; interleaving g=0.42)
 - **F8 Undo last rating** · **F9 Session summary v2** · **F10 LabRuns draft protection** (silent data loss on collapse)
 
-### M2 — A scheduler that scales + habit loop (~4 days)
+### M2 — A scheduler that scales + habit loop — ✅ COMPLETE 2026-07-09
 - **F11 Growing-ladder scheduler** ("SM-2 lite"): `next = max(ladder[rating], prev_interval × {3:×1.2, 4:×2.0, 5:×2.5})`, ratings 1–2 reset + count lapses, intervals capped at 60 days absolute — or ~15% of days-to-exam (Cepeda's optimal-gap research) once an exam date is set. **Deliberately not full FSRS** — parameter fitting is meaningless for one user with weeks of data; `sr.ts` purity keeps an FSRS swap contained if ever wanted.
 - **F12 Settings + optional exam date + 14-day due forecast**; with no date set, show the mastery-based "ready to schedule" indicator instead of a countdown
 - **F13 Minimum-dose streak** (day counts if queue cleared *or* 5 reviews; repair tokens — never hard-reset)
 - **F14 Scoped review sessions + dashboard deep links** (`/review?domain=` — drill Core ML before exam day)
 - **F15 Retention stats per objective/domain** from `answer_attempts` (also settle the local-vs-UTC timestamp inconsistency first)
 
-### M3 — Calibration and honest weak areas (~4–5 days)
+### M3 — Calibration and honest weak areas — ✅ COMPLETE 2026-07-09
 - **F16 Domains table** (weights currently live only in `Dashboard.tsx` — must move server-side)
 - **F17 Weak-area ranking v2**: add accuracy (mean recent rating), recency decay, exam-weight multiplier
 - **F18 Item-level confidence** (one-tap sure/probably/guessing *before* reveal)
 - **F19 Calibration quadrant**: confident-wrong "danger zone," re-tested at ~2d *and* ~7d (hypercorrection effect + its one-week relapse)
 - **F20 Question browser**: search, filters, per-card stats (the `getHistory` API is built but dead)
 
-### M4 — Exam format: MCQ, mocks, error log (~5–7 days)
+### M4 — Exam format: MCQ, mocks, error log — ✅ COMPLETE 2026-07-09 (plus 10 verified pilot MCQs seeded)
 - **F21 MCQ schema**: `question_format` on `recall_questions` + `question_choices` table with per-option `rationale`; `source`/`session_id`/`selected_choice_id` on `answer_attempts`. (MCQs live in `recall_questions` — not a separate table — so they're reviewable in the same spaced queue.)
 - **F22 MCQ Drill mode** — a dedicated untimed practice surface (filterable by domain/objective, keyboard 1–4, immediate feedback showing every option's rationale). The spaced **Review queue stays recall-only**: repeating identical MCQs on a schedule invites answer-pattern memorization and recognition inflates perceived mastery; instead the error log (F24) converts MCQ misses into recall cards that enter the queue. (Mixed formats beat either alone — Adesope 2017: MCQ g=0.70, recall g=0.62 — but each format gets its own surface.)
 - **F23 Mock exam mode**: weight-proportional assembly, 60-min timer, flag-for-review, per-domain score screen; exam attempts **skip the SRS cache mirror** (else one mock reschedules every card — decide before building, not after)

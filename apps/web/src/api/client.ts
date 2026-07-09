@@ -1,7 +1,16 @@
 import type {
   AnswerAttempt,
+  AppSettings,
+  AppSettingsUpdate,
   DashboardSummary,
+  DrillAnswerResult,
+  DrillQuestion,
   DueItem,
+  ExamItemView,
+  ExamReadinessEstimate,
+  ExamResult,
+  ExamSession,
+  ExamSessionDetail,
   LabRunUpdate,
   LabRunWithDetails,
   LabTemplateUpdate,
@@ -12,9 +21,10 @@ import type {
   NewQuestion,
   Objective,
   ObjectiveUpdate,
+  QuestionChoice,
+  QuestionListItem,
   QuestionUpdate,
   RecallQuestion,
-  RecallQuestionWithObjective,
   ReviewForecastDay,
   ReviewSubmission,
 } from '@llmstudy/shared';
@@ -54,8 +64,8 @@ export function updateObjective(
 
 // ---- Recall questions -----------------------------------------------------
 
-export function listQuestions(): Promise<RecallQuestionWithObjective[]> {
-  return http<RecallQuestionWithObjective[]>('/api/questions');
+export function listQuestions(): Promise<QuestionListItem[]> {
+  return http<QuestionListItem[]>('/api/questions');
 }
 
 export function createQuestion(input: NewQuestion): Promise<RecallQuestion> {
@@ -83,10 +93,92 @@ export async function deleteQuestion(id: number): Promise<void> {
   }
 }
 
+/** Full choice set of an MCQ, including answers + rationales (authoring). */
+export function getQuestionChoices(questionId: number): Promise<QuestionChoice[]> {
+  return http<QuestionChoice[]>(`/api/questions/${questionId}/choices`);
+}
+
+// ---- Drill (untimed MCQ practice) ------------------------------------------
+
+export function getDrillQuestions(params?: {
+  domain?: string;
+  objective_id?: number;
+  limit?: number;
+}): Promise<DrillQuestion[]> {
+  const qs = new URLSearchParams();
+  if (params?.domain) qs.set('domain', params.domain);
+  if (params?.objective_id != null) qs.set('objective_id', String(params.objective_id));
+  if (params?.limit != null) qs.set('limit', String(params.limit));
+  const query = qs.toString();
+  return http<DrillQuestion[]>(`/api/drill${query ? `?${query}` : ''}`);
+}
+
+export function submitDrillAnswer(input: {
+  question_id: number;
+  selected_choice_ids: number[];
+}): Promise<DrillAnswerResult> {
+  return http<DrillAnswerResult>('/api/drill/answers', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+// ---- Mock exams -------------------------------------------------------------
+
+export function createExam(input: {
+  question_count?: number;
+  predicted_score?: number;
+}): Promise<ExamSessionDetail> {
+  return http<ExamSessionDetail>('/api/exams', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function listExams(): Promise<ExamSession[]> {
+  return http<ExamSession[]>('/api/exams');
+}
+
+/** In-progress sessions return ExamSessionDetail; completed ones ExamResult
+ * (distinguish by `completed_at`). */
+export function getExam(id: number): Promise<ExamSessionDetail | ExamResult> {
+  return http<ExamSessionDetail | ExamResult>(`/api/exams/${id}`);
+}
+
+export function updateExamItem(
+  examId: number,
+  position: number,
+  patch: {
+    selected_choice_ids?: number[];
+    flagged?: boolean;
+    time_spent_ms?: number;
+  },
+): Promise<ExamItemView> {
+  return http<ExamItemView>(`/api/exams/${examId}/items/${position}`, {
+    method: 'PUT',
+    body: JSON.stringify(patch),
+  });
+}
+
+export function finishExam(id: number): Promise<ExamResult> {
+  return http<ExamResult>(`/api/exams/${id}/finish`, { method: 'POST' });
+}
+
+export function getExamReadiness(): Promise<ExamReadinessEstimate> {
+  return http<ExamReadinessEstimate>('/api/exams/readiness');
+}
+
 // ---- Reviews --------------------------------------------------------------
 
-export function listDue(): Promise<DueItem[]> {
-  return http<DueItem[]>('/api/reviews/due');
+export function listDue(params?: {
+  objective_id?: number;
+  domain?: string;
+}): Promise<DueItem[]> {
+  const qs = new URLSearchParams();
+  if (params?.objective_id != null) qs.set('objective_id', String(params.objective_id));
+  if (params?.domain) qs.set('domain', params.domain);
+  const query = qs.toString();
+  return http<DueItem[]>(`/api/reviews/due${query ? `?${query}` : ''}`);
 }
 
 export function submitReview(input: ReviewSubmission): Promise<AnswerAttempt> {
@@ -164,6 +256,19 @@ export function deleteRun(id: number): Promise<void> {
 
 export function getDashboard(): Promise<DashboardSummary> {
   return http<DashboardSummary>('/api/dashboard');
+}
+
+// ---- Settings ---------------------------------------------------------------
+
+export function getSettings(): Promise<AppSettings> {
+  return http<AppSettings>('/api/settings');
+}
+
+export function updateSettings(patch: AppSettingsUpdate): Promise<AppSettings> {
+  return http<AppSettings>('/api/settings', {
+    method: 'PUT',
+    body: JSON.stringify(patch),
+  });
 }
 
 async function del(url: string): Promise<void> {
