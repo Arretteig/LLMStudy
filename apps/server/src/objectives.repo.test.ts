@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applySchema, type Db } from './db';
+import { NotFoundError, ValidationError } from './errors';
 import {
   createObjective,
   getObjective,
@@ -56,8 +57,35 @@ describe('objectives repository', () => {
     expect(() => createObjective(db, { title: 'Bad', confidence: 9 })).toThrow();
   });
 
-  it('returns undefined when updating a missing objective', () => {
-    expect(updateObjective(db, 4242, { status: 'confident' })).toBeUndefined();
+  it('throws NotFoundError when updating a missing objective', () => {
+    expect(() => updateObjective(db, 4242, { status: 'confident' })).toThrow(
+      NotFoundError,
+    );
     expect(getObjective(db, 4242)).toBeUndefined();
+  });
+
+  it('rejects a blank or non-string title on update', () => {
+    const created = createObjective(db, { title: 'Keep me' });
+    expect(() => updateObjective(db, created.id, { title: '   ' })).toThrow(
+      ValidationError,
+    );
+    expect(() => updateObjective(db, created.id, { title: 42 })).toThrow(
+      ValidationError,
+    );
+    expect(getObjective(db, created.id)!.title).toBe('Keep me');
+  });
+
+  it('rejects malformed review dates, accepts ISO dates and null', () => {
+    expect(() =>
+      createObjective(db, { title: 'Bad date', next_review_date: 'July 9' }),
+    ).toThrow(ValidationError);
+
+    const created = createObjective(db, { title: 'Dated', next_review_date: '2026-07-09' });
+    expect(created.next_review_date).toBe('2026-07-09');
+
+    expect(() =>
+      updateObjective(db, created.id, { last_reviewed_date: '2026-7-9' }),
+    ).toThrow(ValidationError);
+    expect(updateObjective(db, created.id, { next_review_date: null }).next_review_date).toBeNull();
   });
 });

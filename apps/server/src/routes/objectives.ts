@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getDb } from '../db';
+import { NotFoundError } from '../errors';
 import {
   createObjective,
   getObjective,
@@ -20,31 +21,16 @@ objectivesRouter.get('/', (req, res) => {
 // GET /api/objectives/:id
 objectivesRouter.get('/:id', (req, res) => {
   const objective = getObjective(getDb(), Number(req.params.id));
-  if (!objective) return res.status(404).json({ error: 'objective not found' });
+  if (!objective) throw new NotFoundError('objective not found');
   res.json(objective);
 });
 
 // POST /api/objectives
 objectivesRouter.post('/', (req, res) => {
-  try {
-    const objective = createObjective(getDb(), req.body ?? {});
-    res.status(201).json(objective);
-  } catch (err) {
-    res.status(400).json({ error: messageOf(err) });
-  }
+  res.status(201).json(createObjective(getDb(), req.body ?? {}));
 });
 
 // PUT /api/objectives/:id
 objectivesRouter.put('/:id', (req, res) => {
-  try {
-    const objective = updateObjective(getDb(), Number(req.params.id), req.body ?? {});
-    if (!objective) return res.status(404).json({ error: 'objective not found' });
-    res.json(objective);
-  } catch (err) {
-    res.status(400).json({ error: messageOf(err) });
-  }
+  res.json(updateObjective(getDb(), Number(req.params.id), req.body ?? {}));
 });
-
-function messageOf(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}

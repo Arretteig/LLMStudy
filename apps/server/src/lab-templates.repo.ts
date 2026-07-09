@@ -1,5 +1,7 @@
 import type { LabTemplateWithDetails } from '@llmstudy/shared';
 import type { Db } from './db';
+import { NotFoundError } from './errors';
+import { assertNonBlankText } from './validate';
 
 const WRITABLE = [
   'title',
@@ -113,9 +115,7 @@ export function createTemplate(
   input: Record<string, unknown>,
 ): LabTemplateWithDetails {
   const row = pickWritable(input);
-  if (typeof row.title !== 'string' || row.title.trim() === '') {
-    throw new Error('title is required');
-  }
+  assertNonBlankText(row.title, 'title');
   const cols = Object.keys(row);
   const placeholders = cols.map((c) => '@' + c).join(', ');
 
@@ -134,10 +134,13 @@ export function updateTemplate(
   db: Db,
   id: number,
   input: Record<string, unknown>,
-): LabTemplateWithDetails | undefined {
-  if (!db.prepare('SELECT 1 FROM lab_templates WHERE id = ?').get(id)) return undefined;
+): LabTemplateWithDetails {
+  if (!db.prepare('SELECT 1 FROM lab_templates WHERE id = ?').get(id)) {
+    throw new NotFoundError('lab template not found');
+  }
 
   const row = pickWritable(input);
+  if (row.title !== undefined) assertNonBlankText(row.title, 'title');
   db.transaction(() => {
     const cols = Object.keys(row);
     if (cols.length > 0) {
@@ -153,7 +156,7 @@ export function updateTemplate(
       }
     }
   })();
-  return getTemplate(db, id);
+  return getTemplate(db, id)!;
 }
 
 export function deleteTemplate(db: Db, id: number): boolean {

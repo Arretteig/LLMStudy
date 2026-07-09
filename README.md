@@ -22,7 +22,7 @@ areas — with everything connected back to the certification blueprint.
 | Frontend  | Vite + React 18 + TypeScript (SPA), React Router         |
 | Backend   | Express + TypeScript (run via `tsx`), thin `/api`        |
 | Database  | SQLite via `better-sqlite3` (single file, WAL)           |
-| DB access | Raw SQL + a single idempotent `db/schema.sql`            |
+| DB access | Raw SQL: frozen baseline `db/schema.sql` + versioned migrations (`PRAGMA user_version`) |
 | Tests     | Vitest — repo/unit tests + a supertest route smoke test  |
 | Workspace | npm workspaces: `apps/web`, `apps/server`, `packages/shared` |
 
@@ -74,7 +74,11 @@ content, so the app is useful immediately.
    memory, reveal the expected answer. Linked to objectives.
 4. **Review** (`/review`) — the spaced-review queue. One card at a time: answer,
    reveal, self-rate 1–5. Ratings drive the schedule: `1→+1d, 2→+2d, 3→+4d,
-   4→+7d, 5→+14d`.
+   4→+7d, 5→+14d`. Keyboard-first (`Space` reveal · `1–5` rate · `S` skip ·
+   `U` undo); rating unlocks only after reveal, so retrieval is enforced. Cards
+   rated 1–2 come back later in the same session (relearning); new cards are
+   capped at 15/day so day one isn't a 100-card wall. The end-of-session summary
+   shows a rating histogram, your toughest objectives, and tomorrow's load.
 5. **Labs** (`/labs`) — **lab templates**: reusable guided exercises tied to
    objectives (goal, steps, success criteria, reflection questions). Filter by
    objective and **start a run**.

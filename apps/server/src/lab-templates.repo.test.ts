@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applySchema, type Db } from './db';
+import { ValidationError } from './errors';
 import { createObjective } from './objectives.repo';
 import {
   createTemplate,
@@ -49,6 +50,12 @@ describe('lab templates repository', () => {
     const tpl = createTemplate(db, { title: 't', tags: ['a', 'b'] });
     const updated = updateTemplate(db, tpl.id, { tags: ['b', 'c'] })!;
     expect(updated.tags).toEqual(['b', 'c']);
+  });
+
+  it('rejects a blank title on update', () => {
+    const tpl = createTemplate(db, { title: 'Keep me' });
+    expect(() => updateTemplate(db, tpl.id, { title: '' })).toThrow(ValidationError);
+    expect(getTemplate(db, tpl.id)!.title).toBe('Keep me');
   });
 
   it('counts runs started from the template', () => {

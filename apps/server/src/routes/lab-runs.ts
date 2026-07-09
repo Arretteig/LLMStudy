@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { getDb } from '../db';
+import { NotFoundError, ValidationError } from '../errors';
 import {
   createRun,
   deleteRun,
@@ -17,11 +18,11 @@ labRunsRouter.get('/', (req, res) => {
   const templateId = numParam(req.query.template_id);
   const objectiveId = numParam(req.query.objective_id);
   if (templateId !== undefined) {
-    if (Number.isNaN(templateId)) return res.status(400).json({ error: 'template_id must be a number' });
+    if (Number.isNaN(templateId)) throw new ValidationError('template_id must be a number');
     filter.templateId = templateId;
   }
   if (objectiveId !== undefined) {
-    if (Number.isNaN(objectiveId)) return res.status(400).json({ error: 'objective_id must be a number' });
+    if (Number.isNaN(objectiveId)) throw new ValidationError('objective_id must be a number');
     filter.objectiveId = objectiveId;
   }
   if (typeof req.query.status === 'string' && req.query.status !== '') {
@@ -32,39 +33,25 @@ labRunsRouter.get('/', (req, res) => {
 
 labRunsRouter.get('/:id', (req, res) => {
   const run = getRun(getDb(), Number(req.params.id));
-  if (!run) return res.status(404).json({ error: 'lab run not found' });
+  if (!run) throw new NotFoundError('lab run not found');
   res.json(run);
 });
 
 labRunsRouter.post('/', (req, res) => {
-  try {
-    res.status(201).json(createRun(getDb(), req.body ?? {}));
-  } catch (err) {
-    res.status(400).json({ error: messageOf(err) });
-  }
+  res.status(201).json(createRun(getDb(), req.body ?? {}));
 });
 
 labRunsRouter.put('/:id', (req, res) => {
-  try {
-    const run = updateRun(getDb(), Number(req.params.id), req.body ?? {});
-    if (!run) return res.status(404).json({ error: 'lab run not found' });
-    res.json(run);
-  } catch (err) {
-    res.status(400).json({ error: messageOf(err) });
-  }
+  res.json(updateRun(getDb(), Number(req.params.id), req.body ?? {}));
 });
 
 labRunsRouter.delete('/:id', (req, res) => {
   if (!deleteRun(getDb(), Number(req.params.id))) {
-    return res.status(404).json({ error: 'lab run not found' });
+    throw new NotFoundError('lab run not found');
   }
   res.status(204).end();
 });
 
 function numParam(raw: unknown): number | undefined {
   return typeof raw === 'string' && raw !== '' ? Number(raw) : undefined;
-}
-
-function messageOf(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
 }

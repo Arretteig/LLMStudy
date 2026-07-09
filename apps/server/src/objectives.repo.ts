@@ -1,5 +1,7 @@
 import type { Objective } from '@llmstudy/shared';
 import type { Db } from './db';
+import { NotFoundError } from './errors';
+import { assertIsoDate, assertNonBlankText } from './validate';
 
 // Whitelist of columns a client is allowed to write. Anything else in the
 // request body is ignored, so keys can never be injected into SQL.
@@ -43,11 +45,16 @@ export function getObjective(db: Db, id: number): Objective | undefined {
     | undefined;
 }
 
+// Blueprint-level review dates are set manually by the client — keep them real dates.
+function validateDates(row: Partial<Record<WritableKey, unknown>>): void {
+  assertIsoDate(row.last_reviewed_date, 'last_reviewed_date');
+  assertIsoDate(row.next_review_date, 'next_review_date');
+}
+
 export function createObjective(db: Db, input: Record<string, unknown>): Objective {
   const row = pickWritable(input);
-  if (typeof row.title !== 'string' || row.title.trim() === '') {
-    throw new Error('title is required');
-  }
+  assertNonBlankText(row.title, 'title');
+  validateDates(row);
   const cols = Object.keys(row);
   const placeholders = cols.map((c) => '@' + c).join(', ');
   const info = db
@@ -60,11 +67,13 @@ export function updateObjective(
   db: Db,
   id: number,
   input: Record<string, unknown>,
-): Objective | undefined {
+): Objective {
   const existing = getObjective(db, id);
-  if (!existing) return undefined;
+  if (!existing) throw new NotFoundError('objective not found');
 
   const row = pickWritable(input);
+  if (row.title !== undefined) assertNonBlankText(row.title, 'title');
+  validateDates(row);
   const cols = Object.keys(row);
   if (cols.length === 0) return existing;
 
@@ -73,5 +82,5 @@ export function updateObjective(
     `UPDATE objectives SET ${setClause}, updated_at = datetime('now') WHERE id = @id`,
   ).run({ ...row, id });
 
-  return getObjective(db, id);
+  return getObjective(db, id)!;
 }

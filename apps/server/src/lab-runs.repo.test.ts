@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applySchema, type Db } from './db';
+import { ValidationError } from './errors';
 import { createObjective } from './objectives.repo';
 import { createTemplate } from './lab-templates.repo';
 import {
@@ -62,6 +63,26 @@ describe('lab runs repository', () => {
     expect(updated.status).toBe('completed');
     expect(updated.confidence_after).toBe(4);
     expect(updated.completed_at).toBe('2026-07-08');
+  });
+
+  it('rejects malformed timestamps, accepts date, datetime, and null', () => {
+    expect(() => createRun(db, { started_at: 'yesterday' })).toThrow(ValidationError);
+    expect(() => createRun(db, { completed_at: '2026-07-08T09:30:00' })).toThrow(
+      ValidationError, // ISO "T" separator is not the SQLite convention used here
+    );
+
+    const run = createRun(db, { started_at: '2026-07-08 09:30:00' });
+    expect(run.started_at).toBe('2026-07-08 09:30:00');
+
+    expect(() => updateRun(db, run.id, { completed_at: '08/07/2026' })).toThrow(
+      ValidationError,
+    );
+    const updated = updateRun(db, run.id, {
+      completed_at: '2026-07-08',
+      started_at: null,
+    });
+    expect(updated.completed_at).toBe('2026-07-08');
+    expect(updated.started_at).toBeNull();
   });
 
   it('filters runs by template, objective, and status', () => {

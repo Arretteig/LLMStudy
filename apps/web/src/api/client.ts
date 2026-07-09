@@ -15,6 +15,7 @@ import type {
   QuestionUpdate,
   RecallQuestion,
   RecallQuestionWithObjective,
+  ReviewForecastDay,
   ReviewSubmission,
 } from '@llmstudy/shared';
 
@@ -97,6 +98,15 @@ export function submitReview(input: ReviewSubmission): Promise<AnswerAttempt> {
 
 export function getHistory(questionId: number): Promise<AnswerAttempt[]> {
   return http<AnswerAttempt[]>(`/api/reviews/history/${questionId}`);
+}
+
+/** Undo a review by deleting its attempt (409 if not the latest for its question). */
+export function deleteAttempt(id: number): Promise<void> {
+  return del(`/api/reviews/attempts/${id}`);
+}
+
+export function getReviewForecast(days = 7): Promise<ReviewForecastDay[]> {
+  return http<ReviewForecastDay[]>(`/api/reviews/forecast?days=${days}`);
 }
 
 // ---- Lab templates --------------------------------------------------------

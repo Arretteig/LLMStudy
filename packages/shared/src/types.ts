@@ -118,6 +118,14 @@ export interface ReviewSubmission {
   user_answer?: string | null;
 }
 
+/** One day of the upcoming review-load forecast. */
+export interface ReviewForecastDay {
+  /** ISO 'YYYY-MM-DD'. */
+  date: string;
+  /** Questions whose next_review_date falls on that date. */
+  count: number;
+}
+
 export interface ReviewRatingOption {
   value: number;
   label: string;

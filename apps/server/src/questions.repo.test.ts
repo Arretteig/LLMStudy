@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applySchema, type Db } from './db';
+import { NotFoundError, ValidationError } from './errors';
 import { createObjective } from './objectives.repo';
 import {
   createQuestion,
@@ -70,6 +71,21 @@ describe('questions repository', () => {
     })!;
     expect(updated.expected_answer).toBe('the answer');
     expect(updated.difficulty).toBe(4);
+  });
+
+  it('rejects a blank or non-string question_text on update', () => {
+    const q = createQuestion(db, { question_text: 'keep me' });
+    expect(() => updateQuestion(db, q.id, { question_text: '  ' })).toThrow(
+      ValidationError,
+    );
+    expect(() => updateQuestion(db, q.id, { question_text: 7 })).toThrow(
+      ValidationError,
+    );
+    expect(getQuestion(db, q.id)!.question_text).toBe('keep me');
+  });
+
+  it('throws NotFoundError when updating a missing question', () => {
+    expect(() => updateQuestion(db, 4242, { difficulty: 2 })).toThrow(NotFoundError);
   });
 
   it('sets objective_id to NULL when the objective is deleted (ON DELETE SET NULL)', () => {

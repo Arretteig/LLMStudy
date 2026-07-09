@@ -3,6 +3,8 @@ import type {
   RecallQuestionWithObjective,
 } from '@llmstudy/shared';
 import type { Db } from './db';
+import { NotFoundError } from './errors';
+import { assertNonBlankText } from './validate';
 
 // Columns a client may write. SRS cache columns (last_attempted_date,
 // next_review_date, self_score) are intentionally excluded — they are managed
@@ -52,9 +54,7 @@ export function getQuestion(db: Db, id: number): RecallQuestion | undefined {
 
 export function createQuestion(db: Db, input: Record<string, unknown>): RecallQuestion {
   const row = pickWritable(input);
-  if (typeof row.question_text !== 'string' || row.question_text.trim() === '') {
-    throw new Error('question_text is required');
-  }
+  assertNonBlankText(row.question_text, 'question_text');
   const cols = Object.keys(row);
   const placeholders = cols.map((c) => '@' + c).join(', ');
   const info = db
@@ -67,11 +67,12 @@ export function updateQuestion(
   db: Db,
   id: number,
   input: Record<string, unknown>,
-): RecallQuestion | undefined {
+): RecallQuestion {
   const existing = getQuestion(db, id);
-  if (!existing) return undefined;
+  if (!existing) throw new NotFoundError('question not found');
 
   const row = pickWritable(input);
+  if (row.question_text !== undefined) assertNonBlankText(row.question_text, 'question_text');
   const cols = Object.keys(row);
   if (cols.length === 0) return existing;
 
@@ -80,7 +81,7 @@ export function updateQuestion(
     `UPDATE recall_questions SET ${setClause}, updated_at = datetime('now') WHERE id = @id`,
   ).run({ ...row, id });
 
-  return getQuestion(db, id);
+  return getQuestion(db, id)!;
 }
 
 /** Returns true if a row was deleted. */

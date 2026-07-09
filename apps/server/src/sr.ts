@@ -9,6 +9,8 @@
 //   rating 4 (good)   -> review in  7 days
 //   rating 5 (easy)   -> review in 14 days
 
+import { ValidationError } from './errors';
+
 export const RATING_INTERVAL_DAYS: Record<number, number> = {
   1: 1,
   2: 2,
@@ -20,7 +22,7 @@ export const RATING_INTERVAL_DAYS: Record<number, number> = {
 export function intervalForRating(rating: number): number {
   const days = RATING_INTERVAL_DAYS[rating];
   if (days === undefined) {
-    throw new Error(`invalid rating: ${rating} (expected an integer 1-5)`);
+    throw new ValidationError(`invalid rating: ${rating} (expected an integer 1-5)`);
   }
   return days;
 }

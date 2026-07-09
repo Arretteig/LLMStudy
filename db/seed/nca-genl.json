@@ -274,9 +274,9 @@
       "difficulty": 2
     },
     {
-      "objective_title": "Interpreting statistical metrics",
-      "question_text": "Training loss keeps falling but validation loss rises — what is happening and what do you do?",
-      "expected_answer": "Overfitting: the model memorizes training data and generalizes worse. Respond with regularization, early stopping, or more/cleaner data.",
+      "objective_title": "Data visualization for insight",
+      "question_text": "Before fine-tuning an LLM, you profile the dataset and must visualize: (1) the distribution of document token lengths, (2) whether prompt length relates to inference latency, and (3) how many examples each task label has. Which chart type fits each analysis, and why?",
+      "expected_answer": "Use a histogram (or box plot) for token lengths: it shows the shape, spread, and outliers of a single numeric variable's distribution. Use a scatter plot for prompt length vs latency: it exposes the relationship or correlation between two numeric variables, point by point. Use a bar chart for label counts: it compares a quantity across discrete categories, making class imbalance immediately visible. For contrast, line charts suit trends over time and heatmaps suit matrix data like confusion or correlation matrices. A full answer maps all three correctly with a one-line rationale each.",
       "difficulty": 2
     },
     {
@@ -342,7 +342,7 @@
     {
       "objective_title": "Model architecture families",
       "question_text": "What is a Mixture-of-Experts (MoE) architecture, and what is its main advantage for scaling large language models?",
-      "expected_answer": "MoE replaces dense feedforward layers with many expert sub-networks plus a gating/router that activates only a small subset (top-k) of experts per token. This sparse activation lets total parameter count (capacity) grow very large while compute per token stays roughly constant, giving higher quality at lower per-token FLOPs than a dense model of equal size. The trade-off is high memory to hold all experts plus routing and load-balancing complexity.",
+      "expected_answer": "MoE replaces dense feedforward layers with many expert sub-networks plus a gating/router that activates only a small subset (top-k) of experts per token. This sparse activation lets total parameter count (capacity) grow very large while compute per token stays roughly constant, giving higher quality per FLOP: an MoE outperforms a dense model of equal per-token compute (equal active parameters), or delivers the quality of a much larger dense model at a fraction of the per-token cost. The trade-off is high memory to hold all experts plus routing and load-balancing complexity.",
       "difficulty": 4
     },
     {
@@ -352,7 +352,7 @@
       "difficulty": 3
     },
     {
-      "objective_title": "Pre-training, inference, and scaling laws",
+      "objective_title": "Inference optimization and serving",
       "question_text": "You must minimize the inference latency of an LLM serving a real-time chatbot on NVIDIA GPUs, using optimizations such as layer/kernel fusion, kernel auto-tuning, and INT8/FP8 quantization. Which NVIDIA tool is purpose-built for this, and how does its role differ from NVIDIA Triton Inference Server?",
       "expected_answer": "TensorRT-LLM is the right tool: it compiles and optimizes the model into a fast, low-latency inference engine via kernel fusion, auto-tuning, quantization, Tensor Core use, and in-flight batching. Triton Inference Server is the serving/deployment layer that hosts models in production with dynamic batching, concurrent multi-model execution, and multi-framework endpoints. The two are complementary: TensorRT-LLM optimizes the engine, and Triton serves it. The point is picking TensorRT-LLM and stating the optimize-vs-serve boundary.",
       "difficulty": 3
@@ -365,9 +365,9 @@
     },
     {
       "objective_title": "Pre-training, inference, and scaling laws",
-      "question_text": "What is the KV cache in autoregressive transformer inference, how does it speed up generation, and what is its main cost?",
-      "expected_answer": "The KV cache stores the key and value vectors computed for previously generated tokens so they are not recomputed at each decoding step; each new token computes only its own query/key/value and attends over the cached keys and values. This turns per-step attention from recomputing the entire prefix into an incremental operation, greatly speeding decoding. Its main cost is GPU memory that grows with sequence length, layers, heads, and batch size, which can dominate memory usage and limit maximum context or batch size.",
-      "difficulty": 4
+      "question_text": "You are shipping two LLM features: an invoice-field extractor that must give the same correct output every run, and a marketing-slogan brainstormer that should produce varied ideas. Which decoding strategies fit each, and how do greedy decoding, beam search, top-k, top-p (nucleus) sampling, and temperature work?",
+      "expected_answer": "For the extractor, use greedy decoding — pick the argmax token at each step (equivalently temperature 0) — which is deterministic and reproducible but can be dull or repetitive for open-ended text; beam search, also deterministic, instead keeps the N highest-probability partial sequences and suits closed-form tasks like translation or summarization. For the brainstormer, use sampling: top-k samples from only the k most-likely tokens, while top-p (nucleus) samples from the smallest token set whose cumulative probability reaches p, so the candidate pool adapts to how peaked or flat the distribution is. Temperature scales the logits before sampling — below 1 sharpens the distribution toward likely tokens, above 1 flattens it for more diversity — so a moderate-to-high temperature with top-p gives varied slogans. A full answer matches deterministic decoding to the extractor, sampling to the brainstormer, and correctly characterizes at least three of the four strategies plus temperature's role.",
+      "difficulty": 3
     },
     {
       "objective_title": "Prompt engineering and alignment concepts",
@@ -396,7 +396,7 @@
     {
       "objective_title": "Build LLM apps with Python libraries",
       "question_text": "Your LLM-powered app intermittently returns malformed JSON that breaks downstream parsing. Which Python-library approach most reliably enforces a valid, typed output structure, and why is it better than prompt tweaking alone?",
-      "expected_answer": "Use a schema/validation-based structured-output approach: define a Pydantic model and pair it with an output parser (e.g., LangChain's PydanticOutputParser) or a library like `instructor`, ideally backed by the model's native function/tool-calling or JSON mode. This validates the output against the schema and can retry/repair on failure. It is more reliable than raising temperature or regex-scraping free text, because the structure is enforced and checked rather than merely requested.",
+      "expected_answer": "Use a schema/validation-based structured-output approach: define a Pydantic model and pair it with an output parser (e.g., LangChain's PydanticOutputParser) or a library like `instructor`, ideally backed by the model's native function/tool-calling or JSON mode. This validates the output against the schema and can retry/repair on failure. It is more reliable than prompt tweaking alone — or ad-hoc fixes like lowering temperature or regex-scraping free text — because prompts can only request structure, whereas schema-backed parsing enforces and validates it programmatically, with automatic retry or repair when the model deviates.",
       "difficulty": 3
     },
     {
@@ -426,7 +426,7 @@
     {
       "objective_title": "LLM integration and agentic workflows",
       "question_text": "Your assistant must fetch a user's live account balance from an internal REST API. Which LLM-integration mechanism lets the model invoke that API reliably, and how does the control flow actually work?",
-      "expected_answer": "Function/tool calling: you declare the function with a name, description, and a JSON schema of parameters; when appropriate the LLM returns a structured call (function name plus arguments), which your application code executes and then feeds the result back to the model. Crucially, the LLM does not call the API itself; it emits a structured request that your code runs, keeping execution deterministic and secure.",
+      "expected_answer": "Function/tool calling: you declare the function with a name, description, and a JSON schema of parameters; when appropriate the LLM returns a structured call (function name plus arguments), which your application code executes and then feeds the result back to the model. Crucially, the LLM never calls the API itself and never holds credentials; it only emits a structured request, keeping execution under your application's control. Because the chosen function and its arguments are still model-generated (non-deterministic and susceptible to prompt injection), the app must validate arguments and enforce authorization/least privilege before executing the call.",
       "difficulty": 2
     },
     {
@@ -461,9 +461,9 @@
     },
     {
       "objective_title": "Fine-tuning and parameter-efficient adaptation",
-      "question_text": "Your team wants to fine-tune and customize a foundation LLM (including supervised fine-tuning and few-shot prompt development) within the NVIDIA ecosystem. Which NVIDIA framework is purpose-built for this, and why would TensorRT-LLM be the wrong choice?",
-      "expected_answer": "NVIDIA NeMo is the framework for training, fine-tuning, customization, and prompt development. TensorRT-LLM is wrong because it targets inference optimization (low latency, kernel/layer fusion, quantization) rather than model training/customization; Triton Inference Server likewise handles serving/deployment, not fine-tuning.",
-      "difficulty": 2
+      "question_text": "NVIDIA NeMo supports both p-tuning and LoRA for parameter-efficient fine-tuning. How does each method adapt a frozen base model mechanically, and give one practical reason you might choose each over the other.",
+      "expected_answer": "Prompt tuning/p-tuning learns continuous \"virtual token\" embeddings that are prepended to the input — p-tuning uses a small prompt-encoder network to produce them — while every base model weight stays frozen. LoRA instead injects trainable low-rank matrices alongside existing weight matrices (typically the attention projections), and the learned update can be merged into the base weights at inference for zero added latency. Prompt/p-tuning trains the fewest parameters and lets many tasks share one frozen model by just swapping learned prompts; LoRA generally gets closer to full fine-tune quality, especially on harder tasks or smaller models. A full answer states both mechanisms correctly (virtual token embeddings vs low-rank weight updates, base frozen in both) plus one trade-off for each.",
+      "difficulty": 3
     },
     {
       "objective_title": "Fine-tuning and parameter-efficient adaptation",
@@ -563,14 +563,14 @@
     },
     {
       "objective_title": "Interpreting statistical metrics",
-      "question_text": "What does perplexity measure for a language model, and does a lower or higher value indicate a better model?",
-      "expected_answer": "Perplexity measures how well a language model predicts a sample — the exponential of the average per-token cross-entropy (negative log-likelihood), interpretable as the model's average uncertainty or effective branching factor per token. Lower perplexity means the model assigns higher probability to the actual text, i.e., a better fit. It is only meaningfully comparable across models that share the same tokenization/vocabulary and evaluation data.",
+      "question_text": "You run PCA on 768-dimensional sentence embeddings and find the first 50 components have a cumulative explained-variance ratio of 0.95. What does \"proportion of explained variance\" mean here, and how does it guide your decision on how many components to keep?",
+      "expected_answer": "The explained-variance ratio of a principal component is that component's variance divided by the total variance of the data, so the cumulative ratio over the top-k components is the fraction of overall data variance the k-dimensional projection preserves. Here, keeping 50 components retains 95% of the variance, so you can compress 768-d embeddings to 50-d while discarding only ~5%; a standard rule is to pick the smallest k that clears a threshold (e.g., 90-95%) or sits at the elbow of the scree plot. Note that variance retained is a proxy for information — low-variance directions can still carry task-relevant signal, so validate on the downstream task. The same \"proportion of variance explained\" idea appears in regression as R²: 1 is perfect, 0 is no better than predicting the mean, and it can be negative on held-out data if the model is worse than the mean. A full answer defines the ratio as component variance over total variance and gives a threshold- or elbow-based rule for choosing k.",
       "difficulty": 3
     },
     {
       "objective_title": "Interpreting statistical metrics",
-      "question_text": "A fraud-detection classifier reports 99% overall accuracy, yet it misses most actual fraud. Explain why accuracy is misleading here and whether you would prioritize precision or recall.",
-      "expected_answer": "With severe class imbalance, always predicting the majority ('not fraud') yields high accuracy while catching zero fraud, so accuracy is uninformative. Evaluate with precision (of flagged cases, how many are truly fraud) and recall (of all fraud, how many were caught). Here you typically prioritize recall to minimize missed fraud (accepting more false positives), while watching precision, and report F1 or PR-AUC instead of accuracy.",
+      "question_text": "Your team reports model B beats model A by 6 points on an internal QA benchmark. Model A was evaluated last quarter on eval-set v1 at temperature 0.7; model B this week on v2 at temperature 0. Why is this comparison unsound, and how would you fix it?",
+      "expected_answer": "The 6-point gap is confounded: the eval-set version, decoding temperature, and evaluation time all changed along with the model, so any of them could explain the difference. A confound is a variable correlated with both the treatment (which model) and the outcome (the score), offering an alternative explanation for the observed effect. To fix it, re-run both models under identical conditions — same eval-set version, same prompts, same decoding parameters — and change only one variable at a time; also check whether the newer eval set overlaps either model's training data (contamination). A full answer defines confounding, names at least one specific confound in the scenario, and gives two or more controls.",
       "difficulty": 3
     },
     {
@@ -616,9 +616,9 @@
       "difficulty": 3
     },
     {
-      "objective_title": "Content filtering and hallucination mitigation",
-      "question_text": "Which NVIDIA tool lets you add programmable rails to an LLM application to keep conversations on-topic and block unsafe or off-limits responses, and what mechanism does it use?",
-      "expected_answer": "NVIDIA NeMo Guardrails. It lets developers define input, dialog, and output rails (e.g., topical, safety/moderation, jailbreak, and fact-checking rails), commonly authored in the Colang language, that intercept and filter user inputs and model outputs at runtime.",
+      "objective_title": "Responsible and ethical AI practices",
+      "question_text": "Your company publishes images generated with a diffusion model and wants viewers to verify — not just take on trust — that the images are AI-generated. Which open standard enables this, how does it work, and what is one important thing it cannot do?",
+      "expected_answer": "C2PA (Coalition for Content Provenance and Authenticity), often surfaced as \"Content Credentials,\" is an open standard that attaches cryptographically signed, tamper-evident provenance metadata to media, recording its origin and edit history — including which AI tool generated or modified it. Viewers verify the signature chain to confirm the asset's claimed history hasn't been altered. Its key limitation: it proves provenance only for content that was signed when it was created or edited — it cannot detect AI-generated content after the fact, and since metadata can be stripped, media without credentials proves nothing either way. A full answer names C2PA/Content Credentials, describes signed provenance metadata, and states at least one limitation (no post-hoc detection, or strippable/absent metadata proving nothing).",
       "difficulty": 3
     },
     {
@@ -678,7 +678,7 @@
     {
       "objective_title": "Tokenization and embeddings",
       "question_text": "In a semantic-search / RAG retriever, why is cosine similarity typically used to compare a query embedding with document embeddings rather than raw Euclidean distance, and what do cosine values near 1, near 0, and negative indicate?",
-      "expected_answer": "Cosine similarity measures the angle between two vectors and ignores their magnitude, so it captures semantic orientation regardless of vector length (embedding norms vary with text length/token frequency, which Euclidean distance would conflate with meaning). Near 1 = vectors point almost the same direction = semantically very similar; near 0 = orthogonal / unrelated; negative = opposing meaning. Embeddings are often L2-normalized so nearest-neighbor ranking by cosine reflects meaning. (On normalized vectors, cosine ranking and Euclidean ranking coincide.)",
+      "expected_answer": "Cosine similarity measures the angle between two vectors and ignores their magnitude, so it captures semantic orientation regardless of vector length (embedding norms vary with text length/token frequency, which raw Euclidean distance would conflate with meaning). Near 1 = vectors point almost the same direction = semantically very similar; near 0 = nearly orthogonal = unrelated; negative = vectors point in opposing directions = strongly dissimilar. Caveat: with real text-embedding models the space is anisotropic and similarities are mostly non-negative, so read a negative value as 'very dissimilar', not as reliable evidence of opposite/antonymous meaning — antonyms often score high because they appear in similar contexts. Embeddings are often L2-normalized, in which case cosine and Euclidean nearest-neighbor rankings coincide; the cosine rationale matters most for unnormalized vectors.",
       "difficulty": 2
     },
     {

@@ -43,6 +43,8 @@ export function LabRunsPage() {
   const [expandedId, setExpandedId] = useState<number | null>(
     params.get('open') ? Number(params.get('open')) : null,
   );
+  // True while the open run editor has unsaved changes (one editor at a time).
+  const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
     Promise.all([listRuns(), listTemplates()])
@@ -55,6 +57,14 @@ export function LabRunsPage() {
   }, []);
 
   function toggle(id: number) {
+    // Collapsing the open row or expanding another one unmounts the editor,
+    // which would silently discard unsaved edits — confirm first.
+    if (expandedId !== null && dirty) {
+      if (!window.confirm('You have unsaved changes in this run. Discard them?')) {
+        return;
+      }
+      setDirty(false);
+    }
     setExpandedId((cur) => (cur === id ? null : id));
     if (params.get('open')) {
       params.delete('open');
@@ -134,6 +144,7 @@ export function LabRunsPage() {
               remove(run.id).catch((e) => setError(String((e as Error).message ?? e)))
             }
             onError={setError}
+            onDirtyChange={setDirty}
           />
         ))}
       </div>
@@ -184,6 +195,7 @@ function RunRow({
   onSave,
   onDelete,
   onError,
+  onDirtyChange,
 }: {
   run: LabRunWithDetails;
   template?: LabTemplateWithDetails;
@@ -192,6 +204,7 @@ function RunRow({
   onSave: (draft: RunDraft) => Promise<void>;
   onDelete: () => void;
   onError: (msg: string) => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   return (
     <div className="card lab-card">
@@ -220,6 +233,7 @@ function RunRow({
           onSave={onSave}
           onDelete={onDelete}
           onError={onError}
+          onDirtyChange={onDirtyChange}
         />
       )}
     </div>
@@ -232,15 +246,40 @@ function RunEditor({
   onSave,
   onDelete,
   onError,
+  onDirtyChange,
 }: {
   run: LabRunWithDetails;
   template?: LabTemplateWithDetails;
   onSave: (draft: RunDraft) => Promise<void>;
   onDelete: () => void;
   onError: (msg: string) => void;
+  onDirtyChange: (dirty: boolean) => void;
 }) {
   const [draft, setDraft] = useState<RunDraft>(() => toDraft(run));
+  // Snapshot of the initial / last-saved values, for dirty detection.
+  const [savedDraft, setSavedDraft] = useState<RunDraft>(() => toDraft(run));
   const [saving, setSaving] = useState(false);
+
+  const dirty = !draftsEqual(draft, savedDraft);
+
+  useEffect(() => {
+    onDirtyChange(dirty);
+  }, [dirty, onDirtyChange]);
+
+  // Clear the parent's dirty flag when the editor unmounts (confirmed discard,
+  // deletion, navigation away).
+  useEffect(() => () => onDirtyChange(false), [onDirtyChange]);
+
+  // Warn before the tab closes / reloads while there are unsaved edits.
+  useEffect(() => {
+    if (!dirty) return;
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = '';
+    }
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, [dirty]);
 
   function set<K extends keyof RunDraft>(key: K, value: RunDraft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -260,6 +299,7 @@ function RunEditor({
     setSaving(true);
     try {
       await onSave(draft);
+      setSavedDraft(draft);
     } catch (e) {
       onError(String((e as Error).message ?? e));
     } finally {
@@ -462,6 +502,10 @@ function SpinOffQuestion({
       </div>
     </div>
   );
+}
+
+function draftsEqual(a: RunDraft, b: RunDraft): boolean {
+  return (Object.keys(a) as (keyof RunDraft)[]).every((k) => a[k] === b[k]);
 }
 
 function toDraft(run: LabRunWithDetails): RunDraft {

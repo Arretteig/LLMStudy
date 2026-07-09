@@ -1,5 +1,7 @@
 import type { LabRunWithDetails } from '@llmstudy/shared';
 import type { Db } from './db';
+import { NotFoundError } from './errors';
+import { assertIsoDateTime } from './validate';
 
 const WRITABLE = [
   'template_id',
@@ -68,8 +70,15 @@ export function getRun(db: Db, id: number): LabRunWithDetails | undefined {
     | undefined;
 }
 
+// Run timestamps are client-supplied — keep them sortable ISO text.
+function validateDates(row: Partial<Record<WritableKey, unknown>>): void {
+  assertIsoDateTime(row.started_at, 'started_at');
+  assertIsoDateTime(row.completed_at, 'completed_at');
+}
+
 export function createRun(db: Db, input: Record<string, unknown>): LabRunWithDetails {
   const row = pickWritable(input);
+  validateDates(row);
   const cols = Object.keys(row);
   let info;
   if (cols.length === 0) {
@@ -87,9 +96,12 @@ export function updateRun(
   db: Db,
   id: number,
   input: Record<string, unknown>,
-): LabRunWithDetails | undefined {
-  if (!db.prepare('SELECT 1 FROM lab_runs WHERE id = ?').get(id)) return undefined;
+): LabRunWithDetails {
+  if (!db.prepare('SELECT 1 FROM lab_runs WHERE id = ?').get(id)) {
+    throw new NotFoundError('lab run not found');
+  }
   const row = pickWritable(input);
+  validateDates(row);
   const cols = Object.keys(row);
   if (cols.length > 0) {
     const setClause = cols.map((c) => `${c} = @${c}`).join(', ');
@@ -97,7 +109,7 @@ export function updateRun(
       `UPDATE lab_runs SET ${setClause}, updated_at = datetime('now') WHERE id = @id`,
     ).run({ ...row, id });
   }
-  return getRun(db, id);
+  return getRun(db, id)!;
 }
 
 export function deleteRun(db: Db, id: number): boolean {
