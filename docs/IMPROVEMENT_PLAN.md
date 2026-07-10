@@ -50,6 +50,11 @@ Full topic checklist per domain (official vs community confidence tags): [resear
 
 ## Track A — Content
 
+> **Status 2026-07-09: Track A COMPLETE.** A0 ✅ · A1 ✅ (139 recall) · A2 ✅ (18 labs — 13 new,
+> all feasibility-verified for Windows/WSL2/4090/vLLM, + 3 existing labs rewritten with
+> artifact-based success criteria) · A3 ✅ (175 MCQs, 35 choose-two ≈ 20%, every option with a
+> verified rationale — three non-overlapping 50-question weight-proportional mock forms).
+
 ### A0. Integrity fixes (hours; do first — everything else builds on a trustworthy bank)
 
 1. **Fix 4 confirmed-flawed expected answers** (corrected text drafted in
