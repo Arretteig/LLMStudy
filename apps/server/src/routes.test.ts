@@ -449,4 +449,20 @@ describe('HTTP routes', () => {
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: 'invalid JSON body' });
   });
+
+  it('POST /api/questions duplicating an existing stem returns 409 JSON, not 500', async () => {
+    const obj = await request(app)
+      .post('/api/objectives')
+      .send({ title: 'Dup-collision route obj' });
+    const payload = {
+      objective_id: obj.body.id,
+      question_text: 'Route-level duplicate stem?',
+      question_format: 'recall',
+    };
+    const first = await request(app).post('/api/questions').send(payload);
+    expect(first.status).toBe(201);
+    const dup = await request(app).post('/api/questions').send(payload);
+    expect(dup.status).toBe(409);
+    expect(String(dup.body.error)).toMatch(/already exists/);
+  });
 });

@@ -48,6 +48,16 @@ export function createApp(): Express {
       // express.json() rejecting a malformed request body
       return res.status(400).json({ error: 'invalid JSON body' });
     }
+    // Backstop: any SQLite constraint violation a repo didn't translate is a
+    // client-data conflict, not a server fault — never let it become a 500.
+    // (Generic message on purpose: raw SQLite errors leak schema details.)
+    const code = (err as { code?: string } | null)?.code;
+    if (typeof code === 'string' && code.startsWith('SQLITE_CONSTRAINT')) {
+      const unique = code === 'SQLITE_CONSTRAINT_UNIQUE';
+      return res
+        .status(unique ? 409 : 400)
+        .json({ error: unique ? 'already exists' : 'constraint violation' });
+    }
     console.error(err);
     res.status(500).json({ error: 'internal server error' });
   });

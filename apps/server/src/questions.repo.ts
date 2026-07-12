@@ -5,7 +5,7 @@ import type {
   RecallQuestion,
 } from '@llmstudy/shared';
 import type { Db } from './db';
-import { NotFoundError, ValidationError } from './errors';
+import { ConflictError, NotFoundError, ValidationError } from './errors';
 import { assertNonBlankText } from './validate';
 
 // Columns a client may write. SRS cache columns (last_attempted_date,
@@ -148,7 +148,26 @@ export function createQuestion(db: Db, input: Record<string, unknown>): RecallQu
     return id;
   });
 
-  return getQuestion(db, insertAll())!;
+  try {
+    return getQuestion(db, insertAll())!;
+  } catch (err) {
+    throw asDuplicateQuestionError(err);
+  }
+}
+
+/**
+ * UNIQUE(objective_id, question_text) spans BOTH formats, so e.g. spawning a
+ * recall card with an MCQ's verbatim stem collides. Surface that as a 409
+ * with an actionable message instead of a generic SqliteError (-> 500).
+ */
+function asDuplicateQuestionError(err: unknown): unknown {
+  const code = (err as { code?: string } | null)?.code;
+  if (code === 'SQLITE_CONSTRAINT_UNIQUE') {
+    return new ConflictError(
+      'a question with this exact text already exists for this objective — reword it slightly',
+    );
+  }
+  return err;
 }
 
 export function updateQuestion(
@@ -181,7 +200,7 @@ export function updateQuestion(
   const cols = Object.keys(row);
   if (cols.length === 0 && choices === undefined) return existing;
 
-  db.transaction(() => {
+  const run = db.transaction(() => {
     if (cols.length > 0) {
       const setClause = cols.map((c) => `${c} = @${c}`).join(', ');
       db.prepare(
@@ -196,7 +215,12 @@ export function updateQuestion(
         `UPDATE recall_questions SET updated_at = datetime('now') WHERE id = ?`,
       ).run(id);
     }
-  })();
+  });
+  try {
+    run();
+  } catch (err) {
+    throw asDuplicateQuestionError(err);
+  }
 
   return getQuestion(db, id)!;
 }

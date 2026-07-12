@@ -36,7 +36,13 @@ export function ErrorLogDialog({
 }) {
   const [classification, setClassification] = useState<string | null>(null);
   const [sentence, setSentence] = useState('');
-  const [cardText, setCardText] = useState(target.questionText);
+  // Suffix the stem so the recall card states its actual task AND never
+  // collides with the source MCQ — recall_questions has
+  // UNIQUE(objective_id, question_text) across both formats, so saving the
+  // verbatim stem under the same objective is rejected as a duplicate.
+  const [cardText, setCardText] = useState(
+    `${target.questionText} Explain why the correct answer is right.`,
+  );
   // Expected answer stays derived from the sentence until manually edited.
   const [expectedDraft, setExpectedDraft] = useState('');
   const [expectedTouched, setExpectedTouched] = useState(false);

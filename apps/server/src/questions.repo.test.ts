@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { applySchema, runMigrations, type Db } from './db';
-import { NotFoundError, ValidationError } from './errors';
+import { ConflictError, NotFoundError, ValidationError } from './errors';
 import { createObjective } from './objectives.repo';
 import {
   createQuestion,
@@ -267,5 +267,51 @@ describe('questions repository — MCQs (F21)', () => {
     createQuestion(db, { question_text: 'recall q' });
     const formats = listQuestions(db).map((q) => q.question_format);
     expect(formats.sort()).toEqual(['mcq', 'recall']);
+  });
+});
+
+describe('questions repository — duplicate text (error-log spawn collision)', () => {
+  let db: Db;
+  beforeEach(() => {
+    db = memoryDb();
+  });
+
+  const CHOICES = [
+    { choice_text: 'right', is_correct: true, rationale: 'yes' },
+    { choice_text: 'wrong a', is_correct: false, rationale: 'no' },
+    { choice_text: 'wrong b', is_correct: false, rationale: 'no' },
+  ];
+
+  it('rejects a recall card duplicating an MCQ stem under the same objective with ConflictError', () => {
+    const obj = createObjective(db, { title: 'Objective A' });
+    createQuestion(db, {
+      objective_id: obj.id,
+      question_text: 'Shared stem?',
+      question_format: 'mcq',
+      choices: CHOICES,
+    });
+    // The Drill/Exam error-log dialog used to submit the stem verbatim — this
+    // must be a 409-mapped ConflictError, never a raw SqliteError (-> 500).
+    expect(() =>
+      createQuestion(db, { objective_id: obj.id, question_text: 'Shared stem?' }),
+    ).toThrow(ConflictError);
+  });
+
+  it('rejects an update that collides with another question of the same objective', () => {
+    const obj = createObjective(db, { title: 'Objective B' });
+    createQuestion(db, { objective_id: obj.id, question_text: 'first' });
+    const second = createQuestion(db, { objective_id: obj.id, question_text: 'second' });
+    expect(() =>
+      updateQuestion(db, second.id, { question_text: 'first' }),
+    ).toThrow(ConflictError);
+  });
+
+  it('allows the same text under a different objective (constraint is per-objective)', () => {
+    const a = createObjective(db, { title: 'Objective C' });
+    const b = createObjective(db, { title: 'Objective D' });
+    createQuestion(db, { objective_id: a.id, question_text: 'same text' });
+    expect(() =>
+      createQuestion(db, { objective_id: b.id, question_text: 'same text' }),
+    ).not.toThrow();
   });
 });
